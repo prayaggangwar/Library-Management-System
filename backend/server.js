@@ -133,9 +133,16 @@ const verifyLibrarian = (req, res, next) => {
 
 // --- API ROUTES ---
 
+app.get("/", (req, res) => {
+
+  res.send("LMS Backend Running Successfully");
+
+});
 app.get("/test", (req, res) => {
 
   res.json({
+
+    success: true,
 
     message: "Backend Working"
   });

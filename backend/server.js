@@ -28,6 +28,15 @@ const transporter = nodemailer.createTransport({
 
 });
 
+// Verify SMTP connection on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("\n❌ Brevo SMTP Connection Error:", error.message, "\n");
+  } else {
+    console.log("\n✅ Brevo SMTP Server is connected and ready!\n");
+  }
+});
+
 const app = express();
 
 app.use(cors());

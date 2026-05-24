@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Dashboard</title>
+  <link rel="stylesheet" href="student-style.css"/>
+  <style>
+    button {
+      transition: transform 0.1s ease-in-out !important;
+    }
+    button:active {
+      transform: scale(0.92) !important;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+
+    <h2>LMS Student</h2>
+
+    <ul>
+        <li onclick="showSection('dashboard')">Dashboard</li>
+
+        <li onclick="showSection('book-list')">
+         Book List
+        </li>
+
+        <li onclick="showSection('issued-books')">
+        Issued Books
+        </li>
+
+        <li onclick="showSection('fine')">
+        Fine
+        </li>
+
+        <li onclick="showSection('profile')">
+        Profile
+        </li>
+
+        <li class="logout-item" onclick="logout()">
+        Logout
+        </li>
+    </ul>
+
+</div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+
+    <!-- Navbar -->
+    <div class="topbar">
+      <h1>Student Dashboard</h1>
+
+      <div class="topbar-right">
+        <button id="darkModeBtn" onclick="toggleDarkMode()">🌙</button>
+        <div class="clock" id="clock">Loading...</div>
+        <div class="student-info">
+          <span id="welcome-text">Welcome, Prayag</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div id="dashboard-notifications"></div>
+
+    <div id="dashboard" class="content-section active-section">
+
+    <!-- Cards -->
+    <div class="cards">
+
+      <div class="card">
+        <h3>Issued Books</h3>
+        <p id="stat-issued-books">0</p>
+      </div>
+
+      <div class="card">
+        <h3>Pending Fine</h3>
+        <p id="stat-pending-fine">₹0</p>
+      </div>
+
+      <div class="card">
+        <h3>Today's Attendance</h3>
+        <p id="stat-attendance" style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">Loading...</p>
+        <p id="stat-attendance-time" style="font-size: 13px; color: #666; margin-bottom: 15px; min-height: 15px;"></p>
+        <button id="markAttendanceBtn" onclick="markAttendance()" style="background: #6c757d; width: 100%; padding: 10px;" disabled>Please wait</button>
+        <div id="student-attendance-calendar"></div>
+      </div>
+
+    </div>
+
+    <!-- Fine Imposed -->
+    <div class="section" style="margin-bottom: 25px;">
+      <h2>Fine Imposed</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Book ID</th>
+            <th>Reason</th>
+            <th>Fine Amount</th>
+          </tr>
+        </thead>
+        <tbody id="dashboard-fine-list"></tbody>
+      </table>
+    </div>
+    </div>
+
+    <!-- Sections Grid -->
+    <div class="dashboard-grid">
+
+      <!-- Book List -->
+      <div id="book-list" class="content-section">
+      <div class="section">
+        <h2>Book List</h2>
+
+        <input type="text" id="searchAvailable" placeholder="Search available books..." onkeyup="searchAvailableBooks()" />
+
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Book</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+
+          <tbody id="bookList"></tbody>
+        </table>
+      </div>
+      </div>
+
+      <!-- Issued Books -->
+      <div id="issued-books" class="content-section">
+      <div class="section">
+        <h2>Issued Books</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Book</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+
+          <tbody id="issuedBooksList"></tbody>
+        </table>
+      </div>
+      </div>
+
+      <!-- Fine -->
+      <div id="fine" class="content-section">
+      <div class="section">
+        <h2>Fine Details</h2>
+
+        <table style="margin-bottom: 20px;">
+          <thead>
+            <tr>
+              <th>Book ID</th>
+              <th>Reason</th>
+              <th>Fine Amount</th>
+            </tr>
+          </thead>
+          <tbody id="detailed-fine-list"></tbody>
+        </table>
+
+        <p id="total-fine-amount">Total Fine: ₹120</p>
+        <button onclick="payFine()">Pay Fine</button>
+      </div>
+      </div>
+
+      <!-- Profile -->
+      <div id="profile" class="content-section">
+      <div class="section">
+        <h2>Student Profile</h2>
+
+        <p><strong>Name:</strong> <span id="profile-name">Prayag</span></p>
+        <p><strong>Course:</strong> <span id="profile-course">B.Tech CSE</span></p>
+        <p><strong>Semester:</strong> <span id="profile-semester">4th</span></p>
+      </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="student-script.js"></script>
+</body>
+</html>

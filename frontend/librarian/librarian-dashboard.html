@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Librarian Dashboard</title>
+  <link rel="stylesheet" href="librarian-style.css">
+  <style>
+    button {
+      transition: transform 0.1s ease-in-out !important;
+    }
+    button:active {
+      transform: scale(0.92) !important;
+    }
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h2>Librarian Panel</h2>
+  <div id="librarianEmailDisplay" style="text-align: center; margin-top: -20px; margin-bottom: 20px; color: #90caf9; font-size: 14px; word-wrap: break-word;"></div>
+
+  <ul>
+    <li onclick="showSection('dashboard')">Dashboard</li>
+    <li onclick="showSection('manage-students')">Manage Students</li>
+    <li onclick="showSection('manage-books')">Manage Books</li>
+    <li onclick="showSection('due-fines')">Due Fines</li>
+    <li class="logout-item" onclick="logout()">
+  Logout
+</li>
+  </ul>
+</div>
+
+<div class="main-content">
+  <div class="topbar">
+    <h1>Librarian Dashboard</h1>
+    <div class="topbar-right">
+      <button id="darkModeBtn" onclick="toggleDarkMode()">🌙</button>
+      <div class="clock" id="clock">00:00:00</div>
+    </div>
+  </div>
+
+  <div id="dashboard" class="content-section active-section">
+    <div class="cards">
+      <div class="card">
+        <h3>Total Students</h3>
+        <p id="dashTotalStudents">0</p>
+      </div>
+
+      <div class="card">
+        <h3>Total Books</h3>
+        <p id="dashTotalBooks">0</p>
+      </div>
+
+      <div class="card">
+        <h3>Issued Books</h3>
+        <p id="dashIssuedBooks">0</p>
+      </div>
+
+      <div class="card">
+        <h3>Fine Collected</h3>
+        <p>₹<span id="dashTotalCollected">0</span></p>
+      </div>
+    </div>
+  </div>
+
+  <div id="manage-students" class="content-section">
+    <div class="section">
+      <h2>Manage Students</h2>
+
+      <div class="action-buttons" style="margin-bottom: 20px;">
+        <button onclick="setStudentMode('list')">Student List</button>
+        <button onclick="setStudentMode('attendance')">Attendance</button>
+        <button onclick="sortStudents()">Sort A-Z</button>
+      </div>
+
+      <ul id="studentList"></ul>
+    </div>
+  </div>
+
+  <div id="manage-books" class="content-section">
+    <div class="section">
+      <h2>Manage Books</h2>
+
+      <div class="action-buttons" style="margin-bottom: 20px;">
+        <button onclick="setBookFilter('All')">All Books</button>
+        <button onclick="setBookFilter('Available')">Available Books</button>
+        <button onclick="setBookFilter('Issued')">Issued Books</button>
+      </div>
+
+      <div id="add-book-controls" style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <input type="text" id="newBookId" placeholder="Book ID" style="width: 100px; margin-bottom: 0;" disabled title="Auto-generated ID">
+        <input type="text" id="newBookName" placeholder="Enter book name" style="width: auto; flex: 1; margin-bottom: 0;">
+        <button onclick="addBook()">Add Book</button>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Book ID</th>
+            <th>Book Name</th>
+            <th>Status</th>
+            <th>Issued To</th>
+            <th>Return Date</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+
+        <tbody id="bookList"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="due-fines" class="content-section">
+    <div class="section">
+      <h2>Due Fines</h2>
+
+      <div style="margin-bottom: 20px; font-size: 18px; font-weight: bold; color: #28a745;">
+        Total Fine Collected: ₹<span id="totalCollected">0</span>
+      </div>
+      
+      <div id="add-fine-controls" style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <input type="text" id="manualFineStudent" placeholder="Student Name" style="width: auto; flex: 1; margin-bottom: 0;">
+        <input type="text" id="manualFineBook" value="N/A" title="Leave as N/A if not applicable" style="width: auto; flex: 1; margin-bottom: 0;">
+        <input type="text" id="manualFineReason" placeholder="Reason (e.g. Torn Cover)" style="width: auto; flex: 1; margin-bottom: 0;">
+        <input type="number" id="manualFineAmount" placeholder="Amount (₹)" style="width: 120px; margin-bottom: 0;">
+        <button onclick="addManualFine()">Add Fine</button>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Student Name</th>
+            <th>Book ID</th>
+            <th>Reason</th>
+            <th>Fine Amount</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="fineList"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Student Details Modal -->
+<div id="studentDetailsModal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeStudentDetails()">&times;</span>
+    <h2 style="margin-bottom: 20px;">Student Details</h2>
+    <div id="studentDetailsBody">
+      <!-- Details will be injected here via JavaScript -->
+    </div>
+  </div>
+</div>
+
+<script src="librarian-script.js"></script>
+</body>
+</html>

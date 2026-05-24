@@ -8,9 +8,26 @@ const cron = require("node-cron");
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, '../.env') });
 
-const { Resend } = require("resend");
+const nodemailer = require("nodemailer");
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+
+const transporter = nodemailer.createTransport({
+
+  host: "smtp-relay.brevo.com",
+
+  port: 587,
+
+  secure: false,
+
+  auth: {
+
+    user: process.env.BREVO_EMAIL,
+
+    pass: process.env.BREVO_PASS
+
+  }
+
+});
 
 const app = express();
 

@@ -7,36 +7,6 @@ const cron = require("node-cron");
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, '../.env') });
 
-const nodemailer = require("nodemailer");
-
-
-const transporter = nodemailer.createTransport({
-
-  host: "smtp-relay.brevo.com",
-
-  port: 587,
-
-  secure: false,
-
-  auth: {
-
-    user: process.env.BREVO_EMAIL,
-
-    pass: process.env.BREVO_PASS
-
-  }
-
-});
-
-// Verify SMTP connection on startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("\n❌ Brevo SMTP Connection Error:", error.message, "\n");
-  } else {
-    console.log("\n✅ Brevo SMTP Server is connected and ready!\n");
-  }
-});
-
 const app = express();
 
 app.use(cors());
@@ -193,13 +163,22 @@ app.post("/api/send-email-otp", async (req, res) => {
         </div>
       `;
 
-      // Send email using Nodemailer (Brevo)
-      await transporter.sendMail({
-        from: `"Library System" <${process.env.BREVO_EMAIL}>`,
-        to: normalizedEmail,
-        subject: "Library Management System OTP",
-        html: otpTemplate
+      // Bypass Render SMTP Firewall using Brevo HTTP API
+      const emailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "accept": "application/json",
+          "api-key": process.env.BREVO_API_KEY || process.env.BREVO_PASS,
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          sender: { name: "Library System", email: process.env.BREVO_EMAIL },
+          to: [{ email: normalizedEmail }],
+          subject: "Library Management System OTP",
+          htmlContent: otpTemplate
+        })
       });
+      if (!emailResponse.ok) throw new Error(await emailResponse.text());
       
       console.log(`\n[EMAIL GATEWAY] OTP successfully sent to ${normalizedEmail}\n`); 
       res.json({ success: true, message: "OTP sent successfully! Please check your email." });
@@ -483,14 +462,21 @@ app.put("/api/books/:id", verifyToken, async (req, res) => {
               </div>
             `;
 
-            transporter.sendMail({
-              from: `"Library System" <${process.env.BREVO_EMAIL}>`,
-              to: studentDoc.email,
-              subject: "Notice: Library Fine Imposed",
-              html: fineTemplate
-            }).then(() => {
-              console.log(`\n[EMAIL GATEWAY] Fine notification sent to ${studentDoc.email}\n`);
-            }).catch(err => console.error("\n❌ Email Gateway Error:", err.message, "\n"));
+            fetch("https://api.brevo.com/v3/smtp/email", {
+              method: "POST",
+              headers: {
+                "accept": "application/json",
+                "api-key": process.env.BREVO_API_KEY || process.env.BREVO_PASS,
+                "content-type": "application/json"
+              },
+              body: JSON.stringify({
+                sender: { name: "Library System", email: process.env.BREVO_EMAIL },
+                to: [{ email: studentDoc.email }],
+                subject: "Notice: Library Fine Imposed",
+                htmlContent: fineTemplate
+              })
+            }).then(() => console.log(`\n[EMAIL GATEWAY] Fine notification sent to ${studentDoc.email}\n`))
+              .catch(err => console.error("\n❌ Email Gateway Error:", err.message, "\n"));
             }
           } else if (existingFine.amount !== fineAmount) {
             existingFine.amount = fineAmount;

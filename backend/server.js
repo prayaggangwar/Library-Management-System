@@ -2,11 +2,13 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 const jwt = require("jsonwebtoken");
 const cron = require("node-cron");
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, '../.env') });
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const app = express();
 
@@ -147,7 +149,7 @@ app.post("/api/send-email-otp", async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     otpStore[normalizedEmail] = otp;
     
-    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    if (process.env.RESEND_API_KEY) {
       const otpTemplate = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
           <div style="background-color: #1e3c72; padding: 20px; text-align: center;">
@@ -164,22 +166,15 @@ app.post("/api/send-email-otp", async (req, res) => {
         </div>
       `;
 
-      // Bypass Render SMTP Firewall using Brevo HTTP API
-      const emailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
-        method: "POST",
-        headers: {
-          "accept": "application/json",
-          "api-key": process.env.BREVO_API_KEY,
-          "content-type": "application/json"
-        },
-        body: JSON.stringify({
-          sender: { name: "Library System", email: process.env.EMAIL_USER },
-          to: [{ email: normalizedEmail }],
-          subject: "Library Management System OTP",
-          htmlContent: otpTemplate
-        })
+      // Send email using Resend
+      const { error } = await resend.emails.send({
+        from: "onboarding@resend.dev",
+        to: normalizedEmail,
+        subject: "Library Management System OTP",
+        html: otpTemplate
       });
-      if (!emailResponse.ok) throw new Error(await emailResponse.text());
+      
+      if (error) throw new Error(error.message);
       
       console.log(`\n[EMAIL GATEWAY] OTP successfully sent to ${normalizedEmail}\n`); 
       res.json({ success: true, message: "OTP sent successfully! Please check your email." });
@@ -442,7 +437,7 @@ app.put("/api/books/:id", verifyToken, async (req, res) => {
             
             // --- SEND EMAIL NOTIFICATION ---
             const studentDoc = await Student.findOne({ name: bookToReturn.issuedTo });
-            if (studentDoc && studentDoc.email && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+            if (studentDoc && studentDoc.email && process.env.RESEND_API_KEY) {
               const fineTemplate = `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
                 <div style="background-color: #1e3c72; padding: 20px; text-align: center;">
@@ -463,22 +458,16 @@ app.put("/api/books/:id", verifyToken, async (req, res) => {
               </div>
             `;
 
-            fetch("https://api.brevo.com/v3/smtp/email", {
-              method: "POST",
-              headers: {
-                "accept": "application/json",
-                "api-key": process.env.BREVO_API_KEY,
-                "content-type": "application/json"
-              },
-              body: JSON.stringify({
-                sender: { name: "Library System", email: process.env.EMAIL_USER },
-                to: [{ email: studentDoc.email }],
-                subject: "Notice: Library Fine Imposed",
-                htmlContent: fineTemplate
-              })
-            }).then(() => console.log(`\n[EMAIL GATEWAY] Fine notification sent to ${studentDoc.email}\n`))
-              .catch(err => console.error("\n❌ Email Gateway Error:", err.message, "\n"));
-          }
+            resend.emails.send({
+              from: "onboarding@resend.dev",
+              to: studentDoc.email,
+              subject: "Notice: Library Fine Imposed",
+              html: fineTemplate
+            }).then(({ error }) => {
+              if (error) throw new Error(error.message);
+              console.log(`\n[EMAIL GATEWAY] Fine notification sent to ${studentDoc.email}\n`);
+            }).catch(err => console.error("\n❌ Email Gateway Error:", err.message, "\n"));
+            }
           } else if (existingFine.amount !== fineAmount) {
             existingFine.amount = fineAmount;
             existingFine.reason = "Overdue Return";

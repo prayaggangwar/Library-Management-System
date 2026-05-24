@@ -93,17 +93,6 @@ async function initializeDB() {
   }
 }
 
-// --- EMAIL CONFIGURATION ---
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  connectionTimeout: 10000,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
 const otpStore = {}; // Temporary in-memory store for OTPs
 const JWT_SECRET = process.env.JWT_SECRET || "lms_super_secret_key_123";
 
@@ -175,14 +164,22 @@ app.post("/api/send-email-otp", async (req, res) => {
         </div>
       `;
 
-      // Send email and wait for result to catch errors
-      await transporter.sendMail({
-        from: `"Library System" <${process.env.EMAIL_USER}>`,
-        to: normalizedEmail,
-        subject: "Library Management System OTP",
-        html: otpTemplate,
-        text: `Your OTP for verification is: ${otp}`
+      // Bypass Render SMTP Firewall using Brevo HTTP API
+      const emailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "accept": "application/json",
+          "api-key": process.env.BREVO_API_KEY,
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          sender: { name: "Library System", email: process.env.EMAIL_USER },
+          to: [{ email: normalizedEmail }],
+          subject: "Library Management System OTP",
+          htmlContent: otpTemplate
+        })
       });
+      if (!emailResponse.ok) throw new Error(await emailResponse.text());
       
       console.log(`\n[EMAIL GATEWAY] OTP successfully sent to ${normalizedEmail}\n`); 
       res.json({ success: true, message: "OTP sent successfully! Please check your email." });
@@ -466,17 +463,21 @@ app.put("/api/books/:id", verifyToken, async (req, res) => {
               </div>
             `;
 
-            transporter.sendMail({
-              from: process.env.EMAIL_USER,
-              to: studentDoc.email,
-              subject: "Notice: Library Fine Imposed",
-              html: fineTemplate,
-              text: `Dear ${studentDoc.name},\n\nYou recently returned the book "${bookToReturn.name}" (ID: ${bookToReturn.id}).\n\nUnfortunately, it was returned ${diffDays} days past its due date (${bookToReturn.returnDate}). As a result, a fine of ₹${fineAmount} has been imposed on your account.\n\nPlease log in to your Student Dashboard to pay your pending fines.\n\nThank you,\nLibrary Management System`
-            }).then(() => {
-              console.log(`\n[EMAIL GATEWAY] Fine notification sent to ${studentDoc.email}\n`);
-            }).catch(err => {
-              console.error("\n❌ Email Gateway Error:", err.message, "\n");
-            });
+            fetch("https://api.brevo.com/v3/smtp/email", {
+              method: "POST",
+              headers: {
+                "accept": "application/json",
+                "api-key": process.env.BREVO_API_KEY,
+                "content-type": "application/json"
+              },
+              body: JSON.stringify({
+                sender: { name: "Library System", email: process.env.EMAIL_USER },
+                to: [{ email: studentDoc.email }],
+                subject: "Notice: Library Fine Imposed",
+                htmlContent: fineTemplate
+              })
+            }).then(() => console.log(`\n[EMAIL GATEWAY] Fine notification sent to ${studentDoc.email}\n`))
+              .catch(err => console.error("\n❌ Email Gateway Error:", err.message, "\n"));
           }
           } else if (existingFine.amount !== fineAmount) {
             existingFine.amount = fineAmount;

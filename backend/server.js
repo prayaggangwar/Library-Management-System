@@ -2,7 +2,6 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 
-const { Resend } = require("resend");
 const jwt = require("jsonwebtoken");
 const cron = require("node-cron");
 const path = require("path");
@@ -168,7 +167,7 @@ app.post("/api/send-email-otp", async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     otpStore[normalizedEmail] = otp;
     
-    if (process.env.RESEND_API_KEY) {
+    if (process.env.BREVO_EMAIL && process.env.BREVO_PASS) {
       const otpTemplate = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
           <div style="background-color: #1e3c72; padding: 20px; text-align: center;">
@@ -185,15 +184,13 @@ app.post("/api/send-email-otp", async (req, res) => {
         </div>
       `;
 
-      // Send email using Resend
-      const { error } = await resend.emails.send({
-        from: "onboarding@resend.dev",
+      // Send email using Nodemailer (Brevo)
+      await transporter.sendMail({
+        from: `"Library System" <${process.env.BREVO_EMAIL}>`,
         to: normalizedEmail,
         subject: "Library Management System OTP",
         html: otpTemplate
       });
-      
-      if (error) throw new Error(error.message);
       
       console.log(`\n[EMAIL GATEWAY] OTP successfully sent to ${normalizedEmail}\n`); 
       res.json({ success: true, message: "OTP sent successfully! Please check your email." });
@@ -456,7 +453,7 @@ app.put("/api/books/:id", verifyToken, async (req, res) => {
             
             // --- SEND EMAIL NOTIFICATION ---
             const studentDoc = await Student.findOne({ name: bookToReturn.issuedTo });
-            if (studentDoc && studentDoc.email && process.env.RESEND_API_KEY) {
+            if (studentDoc && studentDoc.email && process.env.BREVO_EMAIL && process.env.BREVO_PASS) {
               const fineTemplate = `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
                 <div style="background-color: #1e3c72; padding: 20px; text-align: center;">
@@ -477,13 +474,12 @@ app.put("/api/books/:id", verifyToken, async (req, res) => {
               </div>
             `;
 
-            resend.emails.send({
-              from: "onboarding@resend.dev",
+            transporter.sendMail({
+              from: `"Library System" <${process.env.BREVO_EMAIL}>`,
               to: studentDoc.email,
               subject: "Notice: Library Fine Imposed",
               html: fineTemplate
-            }).then(({ error }) => {
-              if (error) throw new Error(error.message);
+            }).then(() => {
               console.log(`\n[EMAIL GATEWAY] Fine notification sent to ${studentDoc.email}\n`);
             }).catch(err => console.error("\n❌ Email Gateway Error:", err.message, "\n"));
             }

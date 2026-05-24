@@ -146,46 +146,8 @@ app.post("/api/send-email-otp", async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     otpStore[normalizedEmail] = otp;
     
-    if (process.env.BREVO_EMAIL && process.env.BREVO_PASS) {
-      const otpTemplate = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-          <div style="background-color: #1e3c72; padding: 20px; text-align: center;">
-            <h2 style="color: white; margin: 0;">Library Management System</h2>
-          </div>
-          <div style="padding: 30px; background-color: #ffffff; text-align: center;">
-            <h3 style="color: #333333; margin-top: 0;">Verification Code</h3>
-            <p style="color: #555555; font-size: 16px; line-height: 1.5;">Please use the following OTP to complete your verification.</p>
-            <div style="background-color: #f8f9fa; border: 1px dashed #ced4da; border-radius: 5px; padding: 20px; margin: 25px 0; display: inline-block;">
-              <h1 style="color: #1e3c72; margin: 0; letter-spacing: 5px; font-size: 36px;">${otp}</h1>
-            </div>
-            <p style="color: #888888; font-size: 14px; margin-top: 30px;">If you didn't request this code, you can safely ignore this email.</p>
-          </div>
-        </div>
-      `;
-
-      // Bypass Render SMTP Firewall using Brevo HTTP API
-      const emailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
-        method: "POST",
-        headers: {
-          "accept": "application/json",
-          "api-key": process.env.BREVO_API_KEY || process.env.BREVO_PASS,
-          "content-type": "application/json"
-        },
-        body: JSON.stringify({
-          sender: { name: "Library System", email: process.env.BREVO_EMAIL },
-          to: [{ email: normalizedEmail }],
-          subject: "Library Management System OTP",
-          htmlContent: otpTemplate
-        })
-      });
-      if (!emailResponse.ok) throw new Error(await emailResponse.text());
-      
-      console.log(`\n[EMAIL GATEWAY] OTP successfully sent to ${normalizedEmail}\n`); 
-      res.json({ success: true, message: "OTP sent successfully! Please check your email." });
-    } else {
-      console.log(`\n[DEV EMAIL GATEWAY] OTP for ${normalizedEmail} is: ${otp}\n`);
-      res.json({ success: true, message: "DEV MODE: OTP printed to your Node.js terminal instead of email." });
-    }
+    console.log(`\n[DEV EMAIL GATEWAY] OTP for ${normalizedEmail} is: ${otp}\n`);
+    res.json({ success: true, message: "DEV MODE: OTP printed to your Node.js terminal instead of email." });
   } catch (err) {
     console.error("\n❌ Email Gateway Error:", err.message, "\n");
     res.status(500).json({ success: false, message: "Failed to send OTP email: " + err.message });
@@ -439,45 +401,6 @@ app.put("/api/books/:id", verifyToken, async (req, res) => {
             const newFine = new Fine({ student: bookToReturn.issuedTo, bookId: bookToReturn.id, amount: fineAmount, reason: "Overdue Return" });
             await newFine.save();
             
-            // --- SEND EMAIL NOTIFICATION ---
-            const studentDoc = await Student.findOne({ name: bookToReturn.issuedTo });
-            if (studentDoc && studentDoc.email && process.env.BREVO_EMAIL && process.env.BREVO_PASS) {
-              const fineTemplate = `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-                <div style="background-color: #1e3c72; padding: 20px; text-align: center;">
-                  <h2 style="color: white; margin: 0;">Library Management System</h2>
-                </div>
-                <div style="padding: 30px; background-color: #ffffff;">
-                  <h3 style="color: #333333; margin-top: 0;">Notice: Library Fine Imposed</h3>
-                  <p style="color: #555555; font-size: 16px; line-height: 1.5;">Dear <strong>${studentDoc.name}</strong>,</p>
-                  <p style="color: #555555; font-size: 16px; line-height: 1.5;">You recently returned the book <strong>"${bookToReturn.name}"</strong> (ID: ${bookToReturn.id}).</p>
-                  <p style="color: #555555; font-size: 16px; line-height: 1.5;">Unfortunately, it was returned <strong>${diffDays} days</strong> past its due date (${bookToReturn.returnDate}). As a result, a fine has been imposed on your account.</p>
-                  <div style="background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 15px; margin: 25px 0;">
-                    <p style="color: #856404; margin: 0; font-size: 18px;"><strong>Fine Amount: ₹${fineAmount}</strong></p>
-                  </div>
-                  <p style="color: #555555; font-size: 16px; line-height: 1.5;">Please log in to your Student Dashboard to pay your pending fines at your earliest convenience.</p>
-                  <hr style="border: none; border-top: 1px solid #eeeeee; margin: 30px 0;" />
-                  <p style="color: #888888; font-size: 14px; margin: 0;">Thank you,<br>Library Management System</p>
-                </div>
-              </div>
-            `;
-
-            fetch("https://api.brevo.com/v3/smtp/email", {
-              method: "POST",
-              headers: {
-                "accept": "application/json",
-                "api-key": process.env.BREVO_API_KEY || process.env.BREVO_PASS,
-                "content-type": "application/json"
-              },
-              body: JSON.stringify({
-                sender: { name: "Library System", email: process.env.BREVO_EMAIL },
-                to: [{ email: studentDoc.email }],
-                subject: "Notice: Library Fine Imposed",
-                htmlContent: fineTemplate
-              })
-            }).then(() => console.log(`\n[EMAIL GATEWAY] Fine notification sent to ${studentDoc.email}\n`))
-              .catch(err => console.error("\n❌ Email Gateway Error:", err.message, "\n"));
-            }
           } else if (existingFine.amount !== fineAmount) {
             existingFine.amount = fineAmount;
             existingFine.reason = "Overdue Return";

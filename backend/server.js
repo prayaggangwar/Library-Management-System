@@ -75,9 +75,9 @@ async function initializeDB() {
     if (count === 0) {
       const defaultBooks = [
         { id: '101', name: 'JavaScript: The Good Parts', status: 'Available' },
-        { id: '102', name: 'Clean Code', status: 'Issued', issuedTo: 'Bob Smith', returnDate: '2026-05-30' },
+        { id: '102', name: 'Clean Code', status: 'Available' },
         { id: '103', name: 'Design Patterns', status: 'Available' },
-        { id: '104', name: 'Grokking Algorithms', status: 'Issued', issuedTo: 'Diana Prince', returnDate: '2026-05-25' },
+        { id: '104', name: 'Grokking Algorithms', status: 'Available',},
         { id: '105', name: 'The Pragmatic Programmer', status: 'Available' },
         { id: '106', name: 'Introduction to Algorithms', status: 'Available' },
         { id: '107', name: 'Head First Design Patterns', status: 'Available' },
@@ -95,7 +95,9 @@ async function initializeDB() {
 
 // --- EMAIL CONFIGURATION ---
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
@@ -143,9 +145,10 @@ app.post("/api/send-email-otp", async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ success: false, message: "Email required" });
+    const normalizedEmail = email.toLowerCase().trim();
     
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    otpStore[email] = otp;
+    otpStore[normalizedEmail] = otp;
     
     if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
       const otpTemplate = `
@@ -166,17 +169,17 @@ app.post("/api/send-email-otp", async (req, res) => {
 
       // Send email and wait for result to catch errors
       await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: email,
+        from: `"Library System" <${process.env.EMAIL_USER}>`,
+        to: normalizedEmail,
         subject: "Library Management System OTP",
         html: otpTemplate,
         text: `Your OTP for verification is: ${otp}`
       });
       
-      console.log(`\n[EMAIL GATEWAY] OTP successfully sent to ${email}\n`); 
+      console.log(`\n[EMAIL GATEWAY] OTP successfully sent to ${normalizedEmail}\n`); 
       res.json({ success: true, message: "OTP sent successfully! Please check your email." });
     } else {
-      console.log(`\n[DEV EMAIL GATEWAY] OTP for ${email} is: ${otp}\n`);
+      console.log(`\n[DEV EMAIL GATEWAY] OTP for ${normalizedEmail} is: ${otp}\n`);
       res.json({ success: true, message: "DEV MODE: OTP printed to your Node.js terminal instead of email." });
     }
   } catch (err) {
@@ -188,12 +191,13 @@ app.post("/api/send-email-otp", async (req, res) => {
 app.post("/api/verify-email-otp", async (req, res) => {
   try {
     const { email, otp } = req.body;
-    if (!otpStore[email] || otpStore[email] !== otp) {
+    const normalizedEmail = email.toLowerCase().trim();
+    if (!otpStore[normalizedEmail] || otpStore[normalizedEmail] !== otp) {
       return res.status(400).json({ success: false, message: "Invalid or expired OTP!" });
     }
     
     // Check if email already exists
-    const exists = await Student.findOne({ email });
+    const exists = await Student.findOne({ email: new RegExp(`^${normalizedEmail}$`, 'i') });
     if (exists) return res.status(400).json({ success: false, message: "Email already exists!" });
 
     res.json({ success: true, message: "OTP verified successfully!" });
@@ -206,14 +210,15 @@ app.post("/api/verify-email-otp", async (req, res) => {
 app.post("/api/register", async (req, res) => {
   try {
     const { name, email, course, semester, password, phone, otp, googleSignIn } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
 
     // Check if email already exists
-    const exists = await Student.findOne({ email });
+    const exists = await Student.findOne({ email: new RegExp(`^${normalizedEmail}$`, 'i') });
     if (exists) return res.status(400).json({ success: false, message: "Email already exists!" });
     
     // Verify Email OTP if it's not a Google Sign-In
     if (!googleSignIn) {
-      if (!otpStore[email] || otpStore[email] !== otp) {
+      if (!otpStore[normalizedEmail] || otpStore[normalizedEmail] !== otp) {
         return res.status(400).json({ success: false, message: "Invalid or expired OTP!" });
       }
       if (!password || password.length < 6) {
@@ -225,10 +230,10 @@ app.post("/api/register", async (req, res) => {
     const count = await Student.countDocuments();
     const studentId = "S" + String(count + 1).padStart(3, '0');
 
-    const newStudent = new Student({ studentId, email, name, course, semester, password, phone });
+    const newStudent = new Student({ studentId, email: normalizedEmail, name, course, semester, password, phone });
     await newStudent.save();
     
-    if (!googleSignIn) delete otpStore[email];
+    if (!googleSignIn) delete otpStore[normalizedEmail];
 
     const token = jwt.sign({ id: newStudent._id, email: newStudent.email, name: newStudent.name, course: newStudent.course, semester: newStudent.semester, role: 'student' }, JWT_SECRET, { expiresIn: '1d' });
     res.json({ success: true, message: `Registration Successful! Your generated Student ID is ${studentId}`, student: newStudent, token });
@@ -256,8 +261,9 @@ app.post("/api/login/google", async (req, res) => {
 app.post("/api/reset-password", async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
     
-    if (!otpStore[email] || otpStore[email] !== otp) {
+    if (!otpStore[normalizedEmail] || otpStore[normalizedEmail] !== otp) {
       return res.status(400).json({ success: false, message: "Invalid or expired OTP!" });
     }
 
@@ -265,12 +271,12 @@ app.post("/api/reset-password", async (req, res) => {
       return res.status(400).json({ success: false, message: "Password must be at least 6 characters long!" });
     }
 
-    const student = await Student.findOne({ email });
+    const student = await Student.findOne({ email: new RegExp(`^${normalizedEmail}$`, 'i') });
     if (!student) return res.status(404).json({ success: false, message: "Student not found!" });
     
     student.password = newPassword;
     await student.save();
-    delete otpStore[email];
+    delete otpStore[normalizedEmail];
     
     res.json({ success: true, message: "Password reset successful!" });
   } catch (err) {
@@ -295,18 +301,19 @@ app.post("/api/login/student", async (req, res) => {
 
 app.post("/api/login/librarian", (req, res) => {
   const { email, otp } = req.body;
-  const authorizedEmails = (process.env.LIBRARIAN_EMAIL || "classmate11007@gmail.com").split(',').map(e => e.trim());
+  const normalizedEmail = email.toLowerCase().trim();
+  const authorizedEmails = (process.env.LIBRARIAN_EMAIL || "classmate11007@gmail.com").split(',').map(e => e.trim().toLowerCase());
   
-  if (!authorizedEmails.includes(email)) {
+  if (!authorizedEmails.includes(normalizedEmail)) {
     return res.status(401).json({ success: false, message: "Unauthorized Librarian Email!" });
   }
 
-  if (!otpStore[email] || otpStore[email] !== otp) {
+  if (!otpStore[normalizedEmail] || otpStore[normalizedEmail] !== otp) {
     return res.status(400).json({ success: false, message: "Invalid or expired OTP!" });
   }
 
-  delete otpStore[email];
-  const token = jwt.sign({ id: "librarian", email: email, role: 'librarian' }, JWT_SECRET, { expiresIn: '1d' });
+  delete otpStore[normalizedEmail];
+  const token = jwt.sign({ id: "librarian", email: normalizedEmail, role: 'librarian' }, JWT_SECRET, { expiresIn: '1d' });
     res.json({ success: true, token });
 });
 

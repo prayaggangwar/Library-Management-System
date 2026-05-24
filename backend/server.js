@@ -9,14 +9,6 @@ require("dotenv").config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
 
-const data = await emailResponse.json();
-
-console.log(data);
-
-sender: {
-  email: process.env.BREVO_EMAIL
-}
-
 app.use(cors());
 app.use(express.json());
 
@@ -154,8 +146,45 @@ app.post("/api/send-email-otp", async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     otpStore[normalizedEmail] = otp;
     
-    console.log(`\n[DEV EMAIL GATEWAY] OTP for ${normalizedEmail} is: ${otp}\n`);
-    res.json({ success: true, message: "DEV MODE: OTP printed to your Node.js terminal instead of email." });
+    if (process.env.BREVO_API_KEY && process.env.BREVO_EMAIL) {
+      const otpTemplate = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+          <div style="background-color: #1e3c72; padding: 20px; text-align: center;">
+            <h2 style="color: white; margin: 0;">Library Management System</h2>
+          </div>
+          <div style="padding: 30px; background-color: #ffffff; text-align: center;">
+            <h3 style="color: #333333; margin-top: 0;">Verification Code</h3>
+            <p style="color: #555555; font-size: 16px; line-height: 1.5;">Please use the following OTP to complete your verification.</p>
+            <div style="background-color: #f8f9fa; border: 1px dashed #ced4da; border-radius: 5px; padding: 20px; margin: 25px 0; display: inline-block;">
+              <h1 style="color: #1e3c72; margin: 0; letter-spacing: 5px; font-size: 36px;">${otp}</h1>
+            </div>
+            <p style="color: #888888; font-size: 14px; margin-top: 30px;">If you didn't request this code, you can safely ignore this email.</p>
+          </div>
+        </div>
+      `;
+
+      const emailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "accept": "application/json",
+          "api-key": process.env.BREVO_API_KEY,
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          sender: { name: "Library System", email: process.env.BREVO_EMAIL },
+          to: [{ email: normalizedEmail }],
+          subject: "Library Management System OTP",
+          htmlContent: otpTemplate
+        })
+      });
+      if (!emailResponse.ok) throw new Error(await emailResponse.text());
+      
+      console.log(`\n[EMAIL GATEWAY] OTP successfully sent to ${normalizedEmail}\n`); 
+      res.json({ success: true, message: "OTP sent successfully! Please check your email." });
+    } else {
+      console.log(`\n[DEV EMAIL GATEWAY] OTP for ${normalizedEmail} is: ${otp}\n`);
+      res.json({ success: true, message: "DEV MODE: OTP printed to your Node.js terminal instead of email." });
+    }
   } catch (err) {
     console.error("\n❌ Email Gateway Error:", err.message, "\n");
     res.status(500).json({ success: false, message: "Failed to send OTP email: " + err.message });

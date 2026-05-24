@@ -1,6 +1,16 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+
+app.use(cors({
+
+  origin: "*",
+
+  methods: ["GET", "POST", "PUT", "DELETE"],
+
+  credentials: true
+
+}));
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const cron = require("node-cron");
@@ -129,8 +139,13 @@ const verifyLibrarian = (req, res, next) => {
 
 // --- API ROUTES ---
 
-app.get("/", (req, res) => {
-  res.send("LMS Backend Running");
+app.get("/test", (req, res) => {
+
+  res.json({
+
+    message: "Backend Working"
+  });
+
 });
 
 app.post("/api/send-email-otp", async (req, res) => {
@@ -550,6 +565,7 @@ cron.schedule("0 1 * * *", async () => {
   }
 });
 
-app.listen(5000, () => {
-  console.log("Server Running on Port 5000");
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server Running on Port ${PORT}`);
 });

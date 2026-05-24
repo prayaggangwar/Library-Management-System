@@ -9,6 +9,14 @@ require("dotenv").config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
 
+const data = await emailResponse.json();
+
+console.log(data);
+
+sender: {
+  email: process.env.BREVO_EMAIL
+}
+
 app.use(cors());
 app.use(express.json());
 

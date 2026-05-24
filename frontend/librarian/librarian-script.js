@@ -47,7 +47,7 @@ let currentStudentMode = 'list';
 
 async function fetchStudents() {
   try {
-    const res = await fetch("http://localhost:5000/api/students", { headers: getAuthHeaders() });
+    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/students", { headers: getAuthHeaders() });
     if (res.status === 401 || res.status === 403) {
       alert("Session expired or unauthorized. Please log in again.");
       logout();
@@ -103,7 +103,7 @@ function renderAttendance() {
 
 async function toggleAttendance(studentId, currentStatus) {
   try {
-    await fetch(`http://localhost:5000/api/students/${studentId}`, {
+    await fetch(`https://library-management-system-1-vh1g.onrender.com/api/students/${studentId}`, {
       method: "PUT",
       headers: { 
         "Content-Type": "application/json",
@@ -122,7 +122,7 @@ async function removeStudent(studentId) {
   if (!confirm(`Are you sure you want to completely remove ${studentToRemove.name} from all databases? They will need to re-register to access the library again.`)) return;
   
   try {
-    const res = await fetch(`http://localhost:5000/api/students/${studentId}`, { 
+    const res = await fetch(`https://library-management-system-1-vh1g.onrender.com/api/students/${studentId}`, { 
       method: "DELETE",
       headers: getAuthHeaders() 
     });
@@ -260,7 +260,7 @@ let books = [];
 
 async function fetchBooks() {
   try {
-    const res = await fetch("http://localhost:5000/api/books");
+    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/books");
     books = await res.json();
     renderBooks();
   } catch (err) {
@@ -283,7 +283,7 @@ async function addBook() {
     }
     
     try {
-      await fetch("http://localhost:5000/api/books", {
+      await fetch("https://library-management-system-1-vh1g.onrender.com/api/books", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -306,7 +306,7 @@ async function addBook() {
 async function deleteBook(bookId) {
   if (confirm("Are you sure you want to delete this book?")) {
     try {
-      const res = await fetch(`http://localhost:5000/api/books/${bookId}`, { 
+      const res = await fetch(`https://library-management-system-1-vh1g.onrender.com/api/books/${bookId}`, { 
         method: "DELETE",
         headers: getAuthHeaders() 
       });
@@ -380,7 +380,7 @@ let fines = [];
 
 async function fetchFines() {
   try {
-    const res = await fetch("http://localhost:5000/api/fines", { headers: getAuthHeaders() });
+    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/fines", { headers: getAuthHeaders() });
     fines = await res.json();
     renderFines();
   } catch (err) {
@@ -412,7 +412,7 @@ function renderFines() {
 
 async function collectFine(fineId, amount) {
   try {
-    const res = await fetch(`http://localhost:5000/api/fines/${fineId}`, {
+    const res = await fetch(`https://library-management-system-1-vh1g.onrender.com/api/fines/${fineId}`, {
       method: 'DELETE',
       headers: getAuthHeaders()
     });
@@ -446,7 +446,7 @@ async function adjustFine(fineId, currentAmount) {
   const newAmount = currentAmount + adjustValue;
 
   try {
-    const res = await fetch(`http://localhost:5000/api/fines/${fineId}`, {
+    const res = await fetch(`https://library-management-system-1-vh1g.onrender.com/api/fines/${fineId}`, {
       method: 'PUT',
       headers: {
         "Content-Type": "application/json",
@@ -484,7 +484,7 @@ async function addManualFine() {
   }
 
   try {
-    const res = await fetch("http://localhost:5000/api/fines", {
+    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/fines", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

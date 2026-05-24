@@ -136,7 +136,7 @@ async function sendOTP(emailInputId, type) {
   }
 
   try {
-    const res = await fetch("http://localhost:5000/api/send-email-otp", {
+    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/send-email-otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email })
@@ -173,7 +173,7 @@ async function verifyOtpAndProceed() {
   }
 
   try {
-    const res = await fetch("http://localhost:5000/api/verify-email-otp", {
+    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/verify-email-otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, otp })
@@ -204,7 +204,7 @@ async function googleSignIn() {
     const result = await auth.signInWithPopup(provider);
     const user = result.user;
 
-    const res = await fetch("http://localhost:5000/api/login/google", {
+    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/login/google", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: user.email })
@@ -262,7 +262,7 @@ async function registerStudent() {
   }
 
   try {
-    const res = await fetch("http://localhost:5000/api/register", {
+    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, course, semester, password: pass, phone, otp, googleSignIn: window.isGoogleSignIn })
@@ -309,7 +309,7 @@ async function resetPassword() {
   }
 
   try {
-    const res = await fetch("http://localhost:5000/api/reset-password", {
+    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/reset-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, otp, newPassword })
@@ -340,7 +340,7 @@ async function studentLogin() {
   }
 
   try {
-    const res = await fetch("http://localhost:5000/api/login/student", {
+    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/login/student", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password: pass })
@@ -372,7 +372,7 @@ async function librarianLogin() {
   }
 
   try {
-    const res = await fetch("http://localhost:5000/api/login/librarian", {
+    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/login/librarian", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, otp })

@@ -2,15 +2,6 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 
-app.use(cors({
-
-  origin: "*",
-
-  methods: ["GET", "POST", "PUT", "DELETE"],
-
-  credentials: true
-
-}));
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const cron = require("node-cron");
@@ -173,27 +164,24 @@ app.post("/api/send-email-otp", async (req, res) => {
         </div>
       `;
 
-      // Send email asynchronously in the background to prevent UI freezing
-      transporter.sendMail({
+      // Send email and wait for result to catch errors
+      await transporter.sendMail({
         from: process.env.EMAIL_USER,
         to: email,
         subject: "Library Management System OTP",
         html: otpTemplate,
         text: `Your OTP for verification is: ${otp}`
-      }).then(() => {
-        console.log(`\n[EMAIL GATEWAY] OTP successfully sent to ${email}\n`); 
-      }).catch(err => {
-        console.error("\n❌ Background Email Gateway Error:", err.message, "\n");
       });
       
-      res.json({ success: true, message: "OTP is being sent! Please check your email in a few moments." });
+      console.log(`\n[EMAIL GATEWAY] OTP successfully sent to ${email}\n`); 
+      res.json({ success: true, message: "OTP sent successfully! Please check your email." });
     } else {
       console.log(`\n[DEV EMAIL GATEWAY] OTP for ${email} is: ${otp}\n`);
       res.json({ success: true, message: "DEV MODE: OTP printed to your Node.js terminal instead of email." });
     }
   } catch (err) {
     console.error("\n❌ Email Gateway Error:", err.message, "\n");
-    res.status(500).json({ success: false, message: "Failed to send OTP email. Please ensure backend credentials are set." });
+    res.status(500).json({ success: false, message: "Failed to send OTP email: " + err.message });
   }
 });
 

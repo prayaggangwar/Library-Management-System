@@ -67,6 +67,11 @@ const fineSchema = new mongoose.Schema({
 });
 const Fine = mongoose.model("Fine", fineSchema);
 
+const librarianSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true }
+});
+const Librarian = mongoose.model("Librarian", librarianSchema);
+
 // --- DATABASE INITIALIZATION ---
 async function initializeDB() {
   try {
@@ -86,6 +91,12 @@ async function initializeDB() {
       ];
       await Book.insertMany(defaultBooks);
       console.log("Database initialized with default books.");
+    }
+
+    const libCount = await Librarian.countDocuments();
+    if (libCount === 0) {
+      await Librarian.insertMany([{ email: "aavararebel@gmail.com" }]);
+      console.log("Database initialized with default librarian emails.");
     }
   } catch (err) {
     console.error("Database initialization failed:", err.message);
@@ -115,6 +126,16 @@ const verifyLibrarian = (req, res, next) => {
       next(); // Success! Move on to the route logic
     } else {
       res.status(403).json({ success: false, message: "Access Denied: Librarian privileges required!" });
+    }
+  });
+};
+
+const verifyAdmin = (req, res, next) => {
+  verifyToken(req, res, () => {
+    if (req.user && req.user.role === 'admin') {
+      next();
+    } else {
+      res.status(403).json({ success: false, message: "Access Denied: Admin privileges required!" });
     }
   });
 };
@@ -302,23 +323,12 @@ app.post("/api/login/student", async (req, res) => {
   }
 });
 
-app.post("/api/login/librarian", (req, res) => {
+app.post("/api/login/admin", (req, res) => {
   const { email, otp } = req.body;
   const normalizedEmail = email.toLowerCase().trim();
-  const authorizedEmails = (
-
-  process.env.LIBRARIAN_EMAIL ||
-
-  "aavararebel@gmail.com,classmate11007@gmail.com,"
-
-)
-
-.split(',')
-
-.map(email => email.trim().toLowerCase());
-
-  if (!authorizedEmails.includes(normalizedEmail)) {
-    return res.status(401).json({ success: false, message: "Unauthorized Librarian Email!" });
+  
+  if (normalizedEmail !== "classmate11007@gmail.com") {
+    return res.status(401).json({ success: false, message: "Unauthorized Admin Email!" });
   }
 
   if (!otpStore[normalizedEmail] || otpStore[normalizedEmail] !== otp) {
@@ -326,8 +336,65 @@ app.post("/api/login/librarian", (req, res) => {
   }
 
   delete otpStore[normalizedEmail];
-  const token = jwt.sign({ id: "librarian", email: normalizedEmail, role: 'librarian' }, JWT_SECRET, { expiresIn: '1d' });
+  const token = jwt.sign({ id: "admin", email: normalizedEmail, role: 'admin' }, JWT_SECRET, { expiresIn: '1d' });
+  res.json({ success: true, token });
+});
+
+app.post("/api/login/librarian", async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const isAuthorized = await Librarian.findOne({ email: normalizedEmail });
+
+    if (!isAuthorized) {
+      return res.status(401).json({ success: false, message: "Unauthorized Librarian Email!" });
+    }
+
+    if (!otpStore[normalizedEmail] || otpStore[normalizedEmail] !== otp) {
+      return res.status(400).json({ success: false, message: "Invalid or expired OTP!" });
+    }
+
+    delete otpStore[normalizedEmail];
+    const token = jwt.sign({ id: "librarian", email: normalizedEmail, role: 'librarian' }, JWT_SECRET, { expiresIn: '1d' });
     res.json({ success: true, token });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Admin endpoints
+app.get("/api/librarians", verifyAdmin, async (req, res) => {
+  try {
+    const librarians = await Librarian.find();
+    res.json(librarians);
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post("/api/librarians", verifyAdmin, async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, message: "Email is required" });
+    const normalized = email.toLowerCase().trim();
+    const exists = await Librarian.findOne({ email: normalized });
+    if (exists) return res.status(400).json({ success: false, message: "Librarian already exists!" });
+    const newLib = new Librarian({ email: normalized });
+    await newLib.save();
+    res.json({ success: true, librarian: newLib });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.delete("/api/librarians/:id", verifyAdmin, async (req, res) => {
+  try {
+    await Librarian.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
 // Student self-service endpoints

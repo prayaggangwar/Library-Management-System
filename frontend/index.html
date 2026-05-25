@@ -20,6 +20,12 @@
     .btn-librarian:hover {
       box-shadow: 0 0 25px #e67e22 !important;
     }
+    .btn-admin {
+      background: #8e44ad !important;
+    }
+    .btn-admin:hover {
+      box-shadow: 0 0 25px #8e44ad !important;
+    }
 
     /* Subtle hover and focus (click) effects for input fields */
     .input {
@@ -33,6 +39,14 @@
       border-color: #1e3c72 !important;
       box-shadow: 0 0 12px rgba(30, 60, 114, 0.25) !important;
       transform: scale(1.01);
+    }
+
+    /* Required Field Indicators */
+    .input[required]:placeholder-shown {
+      border-left: 4px solid #ff4d4d !important;
+    }
+    .input[required]:not(:placeholder-shown) {
+      border-left: 4px solid #28a745 !important;
     }
 
     /* Responsive Interface (Adapts to browser aspect ratio and size) */
@@ -105,16 +119,36 @@
           <span style="font-size: 28px;">📚</span>
           Librarian
         </button>
+        <button class="shadow__btn btn-admin" style="padding: 20px; font-size: 20px; display: flex; align-items: center; justify-content: center; gap: 15px;" onclick="showLogin('admin')">
+          <span style="font-size: 28px;">🛡️</span>
+          Admin
+        </button>
+      </div>
+
+      <!-- Admin Login -->
+      <div id="admin-login" class="login-form hidden">
+        <h2>Admin Login</h2>
+        <input class="input" id="adminEmail" placeholder="Admin Email Address" required>
+        <div class="otp-group" style="display: flex; gap: 10px;">
+          <input class="input" id="adminOtp" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" placeholder="Enter Email OTP" style="flex: 1;" required>
+          <button class="shadow__btn" style="padding: 10px;" onclick="sendOTP('adminEmail', 'login')">Send OTP</button>
+        </div>
+        <button class="shadow__btn" onclick="adminLogin()">
+        Login
+        </button>
+        <button class="shadow__btn" style="background: #6c757d; box-shadow: 0 0 25px #6c757d;" onclick="showRoleSelection()">
+        Back to Role Selection
+        </button>
       </div>
 
       <!-- Student Login -->
       <div id="student-login" class="login-form hidden">
         <h2>Student Login</h2>
         <!-- From Uiverse.io by reglobby --> 
-        <input class="input" id="studentEmail" placeholder="Email Address">
+        <input class="input" id="studentEmail" placeholder="Email Address" required>
         <!-- From Uiverse.io by reglobby --> 
         <div style="position: relative;">
-          <input class="input" id="studentPassword" type="password" placeholder="Password" style="padding-right: 40px;">
+          <input class="input" id="studentPassword" type="password" placeholder="Password" style="padding-right: 40px;" required>
           <span onclick="togglePassword('studentPassword', this)" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none;">👁️</span>
         </div>
         <div style="text-align: right; margin-top: -10px; margin-bottom: 10px;">
@@ -144,9 +178,9 @@
         <h2>Student Registration</h2>
         
         <div id="regStep1" style="display: flex; flex-direction: column; gap: 15px;">
-          <input class="input" id="regEmail" placeholder="Email Address">
+          <input class="input" id="regEmail" placeholder="Email Address" required>
           <div id="regOtpSection" class="otp-group" style="display: flex; gap: 10px;">
-            <input class="input" id="regOtp" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" placeholder="Enter Email OTP" style="flex: 1;">
+            <input class="input" id="regOtp" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" placeholder="Enter Email OTP" style="flex: 1;" required>
             <button class="shadow__btn" style="padding: 10px;" onclick="sendOTP('regEmail', 'register')">Send OTP</button>
           </div>
           <button class="shadow__btn" onclick="verifyOtpAndProceed()">
@@ -155,16 +189,16 @@
         </div>
 
         <div id="regStep2" style="display: none; flex-direction: column; gap: 15px;">
-          <input class="input" id="regName" placeholder="Full Name">
-          <input class="input" id="regPhone" placeholder="Phone Number (Contact/Notifications)">
-          <input class="input" id="regCourse" placeholder="Course (e.g., B.Tech CSE)">
-          <input class="input" id="regSemester" placeholder="Semester (e.g., 2nd)">
+          <input class="input" id="regName" placeholder="Full Name" required>
+          <input class="input" id="regPhone" placeholder="Phone Number (Contact/Notifications)" required>
+          <input class="input" id="regCourse" placeholder="Course (e.g., B.Tech CSE)" required>
+          <input class="input" id="regSemester" placeholder="Semester (e.g., 2nd)" required>
           <div id="regPasswordContainer" style="position: relative;">
-            <input class="input" id="regPassword" type="password" placeholder="Password" style="padding-right: 40px;">
+            <input class="input" id="regPassword" type="password" placeholder="Password" style="padding-right: 40px;" required>
             <span onclick="togglePassword('regPassword', this)" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none;">👁️</span>
           </div>
           <div id="regConfirmPasswordContainer" style="position: relative;">
-            <input class="input" id="regConfirmPassword" type="password" placeholder="Confirm Password" style="padding-right: 40px;">
+            <input class="input" id="regConfirmPassword" type="password" placeholder="Confirm Password" style="padding-right: 40px;" required>
             <span onclick="togglePassword('regConfirmPassword', this)" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none;">👁️</span>
           </div>
           <button class="shadow__btn" onclick="registerStudent()">
@@ -179,17 +213,17 @@
       <!-- Student Reset Password -->
       <div id="student-reset-password" class="login-form hidden" style="gap: 15px;">
         <h2>Reset Password</h2>
-        <input class="input" id="resetEmail" placeholder="Registered Email Address">
+        <input class="input" id="resetEmail" placeholder="Registered Email Address" required>
         <div class="otp-group" style="display: flex; gap: 10px;">
-          <input class="input" id="resetOtp" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" placeholder="Enter Email OTP" style="flex: 1;">
+          <input class="input" id="resetOtp" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" placeholder="Enter Email OTP" style="flex: 1;" required>
           <button class="shadow__btn" style="padding: 10px;" onclick="sendOTP('resetEmail', 'reset')">Send OTP</button>
         </div>
         <div style="position: relative;">
-          <input class="input" id="resetNewPassword" type="password" placeholder="New Password" style="padding-right: 40px;">
+          <input class="input" id="resetNewPassword" type="password" placeholder="New Password" style="padding-right: 40px;" required>
           <span onclick="togglePassword('resetNewPassword', this)" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none;">👁️</span>
         </div>
         <div style="position: relative;">
-          <input class="input" id="resetConfirmPassword" type="password" placeholder="Confirm Password" style="padding-right: 40px;">
+          <input class="input" id="resetConfirmPassword" type="password" placeholder="Confirm Password" style="padding-right: 40px;" required>
           <span onclick="togglePassword('resetConfirmPassword', this)" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none;">👁️</span>
         </div>
         <button class="shadow__btn" onclick="resetPassword()">
@@ -203,9 +237,9 @@
       <!-- Librarian Login -->
       <div id="librarian-login" class="login-form hidden">
         <h2>Librarian Login</h2>
-        <input class="input" id="librarianEmail" placeholder="Librarian Email Address">
+        <input class="input" id="librarianEmail" placeholder="Librarian Email Address" required>
         <div class="otp-group" style="display: flex; gap: 10px;">
-          <input class="input" id="librarianOtp" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" placeholder="Enter Email OTP" style="flex: 1;">
+          <input class="input" id="librarianOtp" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" placeholder="Enter Email OTP" style="flex: 1;" required>
           <button class="shadow__btn" style="padding: 10px;" onclick="sendOTP('librarianEmail', 'login')">Send OTP</button>
         </div>
         <button class="shadow__btn" onclick="librarianLogin()">

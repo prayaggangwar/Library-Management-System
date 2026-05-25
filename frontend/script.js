@@ -99,6 +99,8 @@ function showRoleSelection() {
   
   document.getElementById("student-login").classList.add("hidden");
   document.getElementById("librarian-login").classList.add("hidden");
+  const adminLogin = document.getElementById("admin-login");
+  if (adminLogin) adminLogin.classList.add("hidden");
   const studentRegister = document.getElementById("student-register");
   const studentReset = document.getElementById("student-reset-password");
   if (studentRegister) studentRegister.classList.add("hidden");
@@ -121,29 +123,24 @@ function showLogin(type) {
   if (regPassword) regPassword.style.display = "block";
   if (regConfirm) regConfirm.style.display = "block";
 
-  const studentLogin =
-    document.getElementById("student-login");
+  const studentLogin = document.getElementById("student-login");
+  const librarianLogin = document.getElementById("librarian-login");
+  const adminLogin = document.getElementById("admin-login");
+  const studentRegister = document.getElementById("student-register");
+  const studentReset = document.getElementById("student-reset-password");
 
-  const librarianLogin =
-    document.getElementById("librarian-login");
-
-  const studentRegister = 
-    document.getElementById("student-register");
-
-  const studentReset = 
-    document.getElementById("student-reset-password");
+  studentLogin.classList.add("hidden");
+  librarianLogin.classList.add("hidden");
+  if (adminLogin) adminLogin.classList.add("hidden");
+  if (studentRegister) studentRegister.classList.add("hidden");
+  if (studentReset) studentReset.classList.add("hidden");
 
   if (type === "student") {
     studentLogin.classList.remove("hidden");
-    librarianLogin.classList.add("hidden");
-    if (studentRegister) studentRegister.classList.add("hidden");
-    if (studentReset) studentReset.classList.add("hidden");
-  }
-  else {
+  } else if (type === "librarian") {
     librarianLogin.classList.remove("hidden");
-    studentLogin.classList.add("hidden");
-    if (studentRegister) studentRegister.classList.add("hidden");
-    if (studentReset) studentReset.classList.add("hidden");
+  } else if (type === "admin" && adminLogin) {
+    adminLogin.classList.remove("hidden");
   }
 }
 
@@ -151,6 +148,8 @@ function showRegister() {
   clearMessages();
   document.getElementById("student-login").classList.add("hidden");
   document.getElementById("librarian-login").classList.add("hidden");
+  const adminLogin = document.getElementById("admin-login");
+  if (adminLogin) adminLogin.classList.add("hidden");
   const reset = document.getElementById("student-reset-password");
   if(reset) reset.classList.add("hidden");
   
@@ -166,6 +165,8 @@ function showResetPassword() {
   clearMessages();
   document.getElementById("student-login").classList.add("hidden");
   document.getElementById("librarian-login").classList.add("hidden");
+  const adminLogin = document.getElementById("admin-login");
+  if (adminLogin) adminLogin.classList.add("hidden");
   document.getElementById("student-register").classList.add("hidden");
   document.getElementById("student-reset-password").classList.remove("hidden");
 }
@@ -203,6 +204,7 @@ async function sendOTP(emailInputId, type) {
   if (emailInputId === 'regEmail') containerId = 'regStep1';
   else if (emailInputId === 'resetEmail') containerId = 'student-reset-password';
   else if (emailInputId === 'librarianEmail') containerId = 'librarian-login';
+  else if (emailInputId === 'adminEmail') containerId = 'admin-login';
 
   displayMessage(containerId, "");
 
@@ -215,6 +217,7 @@ async function sendOTP(emailInputId, type) {
   if (emailInputId === 'regEmail') { btn = document.querySelector('#regOtpSection button'); otpInputId = 'regOtp'; }
   else if (emailInputId === 'resetEmail') { btn = document.querySelector('#student-reset-password button'); otpInputId = 'resetOtp'; }
   else if (emailInputId === 'librarianEmail') { btn = document.querySelector('#librarian-login div button'); otpInputId = 'librarianOtp'; }
+  else if (emailInputId === 'adminEmail') { btn = document.querySelector('#admin-login div button'); otpInputId = 'adminOtp'; }
 
   if (btn) {
     btn.innerHTML = `<span class="spinner"></span>Sending...`;
@@ -377,7 +380,7 @@ async function registerStudent() {
   const otp = document.getElementById("regOtp").value.trim();
 
   // If it's a Google sign in, we bypass the custom password and OTP validation.
-  if (!name || !email || !course || !semester || (!window.isGoogleSignIn && (!pass || !confirmPass || !otp))) {
+  if (!name || !email || !phone || !course || !semester || (!window.isGoogleSignIn && (!pass || !confirmPass || !otp))) {
     displayMessage(containerId, "Please fill in all required fields!");
     return;
   }
@@ -389,6 +392,11 @@ async function registerStudent() {
 
   if (!window.isGoogleSignIn && pass !== confirmPass) {
     displayMessage(containerId, "Passwords do not match!");
+    return;
+  }
+
+  if (!/^\d{10}$/.test(phone)) {
+    displayMessage(containerId, "Phone number must be exactly 10 digits!");
     return;
   }
 
@@ -583,6 +591,54 @@ async function librarianLogin() {
   }
 }
 
+async function adminLogin() {
+  const containerId = "admin-login";
+  displayMessage(containerId, "");
+
+  const emailInput = document.getElementById("adminEmail");
+  const otpInput = document.getElementById("adminOtp");
+  
+  const email = emailInput ? emailInput.value.trim() : "";
+  const otp = otpInput ? otpInput.value.trim() : "";
+
+  if (!email || !otp) {
+    displayMessage(containerId, "Please enter Email Address and OTP!");
+    return;
+  }
+
+  const btn = document.querySelector('button[onclick="adminLogin()"]');
+  if (btn && btn.disabled) return;
+  const originalText = btn ? btn.innerHTML : "Login";
+  if (btn) {
+    btn.innerHTML = `<span class="spinner"></span>Logging in...`;
+    btn.disabled = true;
+  }
+
+  try {
+    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/login/admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, otp })
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+      localStorage.setItem("authToken", data.token);
+      showSuccessPopup("Login Successful!", "./admin/admin-dashboard.html");
+    } else {
+      displayMessage(containerId, data.message || "Invalid Email or OTP!");
+    }
+  } catch (err) {
+    console.error(err);
+    displayMessage(containerId, "Server error. Please ensure the backend is running.");
+  } finally {
+    if (btn) {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
+  }
+}
+
 // --- ENTER KEY LOGIN SUPPORT ---
 document.addEventListener("DOMContentLoaded", () => {
   const handleEnter = (e, loginAction) => {
@@ -594,6 +650,8 @@ document.addEventListener("DOMContentLoaded", () => {
     { id: "studentPassword", action: studentLogin },
     { id: "librarianEmail", action: librarianLogin },
     { id: "librarianOtp", action: librarianLogin },
+    { id: "adminEmail", action: adminLogin },
+    { id: "adminOtp", action: adminLogin },
     { id: "regName", action: registerStudent },
     { id: "regEmail", action: verifyOtpAndProceed },
     { id: "regOtp", action: verifyOtpAndProceed },
@@ -612,6 +670,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const element = document.getElementById(id);
     if (element) element.addEventListener("keypress", (e) => handleEnter(e, action));
   });
+
+  // Prevent non-numeric input in the phone number field
+  const regPhone = document.getElementById("regPhone");
+  if (regPhone) {
+    regPhone.addEventListener("input", function() {
+      this.value = this.value.replace(/\D/g, "");
+    });
+  }
 
   // Show the role selection landing page by default
   showRoleSelection();

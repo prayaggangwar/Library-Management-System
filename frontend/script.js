@@ -29,6 +29,7 @@ window.isGoogleSignIn = false; // State flag to assist with seamless Google auto
 
 function showLogin(type) {
   window.isGoogleSignIn = false;
+  localStorage.setItem('lastLoginTab', type);
   const regStep1 = document.getElementById("regStep1");
   const regStep2 = document.getElementById("regStep2");
   const regPassword = document.getElementById("regPasswordContainer") || document.getElementById("regPassword");
@@ -421,7 +422,17 @@ document.addEventListener("DOMContentLoaded", () => {
     if (element) element.addEventListener("keypress", (e) => handleEnter(e, action));
   });
 
-  // Make Librarian Login the default tab when the page loads
-  showLogin('librarian');
+  // Prevent email autofill in OTP fields by explicitly setting autocomplete attribute
+  const otpFields = ["regOtp", "resetOtp", "librarianOtp"];
+  otpFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.setAttribute("autocomplete", "one-time-code");
+    }
+  });
+
+  // Retrieve the last selected tab from localStorage, defaulting to 'student'
+  const lastTab = localStorage.getItem('lastLoginTab') || 'student';
+  showLogin(lastTab);
   updateOtpButtons();
 });

@@ -309,7 +309,7 @@ app.post("/api/login/librarian", (req, res) => {
 
   process.env.LIBRARIAN_EMAIL ||
 
-  "aavararebel@gmail.com,classmate11007@gmail.com"
+  "aavararebel@gmail.com,classmate11007@gmail.com,"
 
 )
 

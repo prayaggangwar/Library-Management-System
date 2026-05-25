@@ -12,6 +12,72 @@
     button:active {
       transform: scale(0.92) !important;
     }
+
+    /* Responsive Design / Mobile Adaptability */
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column !important;
+        display: flex;
+      }
+      .sidebar {
+        width: 100% !important;
+        height: auto !important;
+        position: static !important;
+        padding: 15px !important;
+      }
+      .sidebar ul {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .sidebar li {
+        flex: 1 1 calc(50% - 10px); /* Creates a compact 2-column grid for links */
+        margin: 0 !important;
+        text-align: center;
+        padding: 10px !important;
+      }
+      .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 15px !important;
+      }
+      .cards {
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      .topbar {
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+      }
+      .topbar h1 { font-size: 22px; text-align: center; }
+      .topbar-right {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+      }
+      .action-buttons button {
+        flex: 1 1 auto;
+      }
+      #add-book-controls, #add-fine-controls {
+        flex-direction: column;
+      }
+      #add-book-controls input, #add-fine-controls input,
+      #add-book-controls button, #add-fine-controls button {
+        width: 100% !important;
+      }
+      /* Make tables scrollable instead of overflowing screen */
+      .section {
+        overflow-x: auto;
+      }
+      table {
+        min-width: 600px;
+      }
+    }
   </style>
 </head>
 <body>

@@ -305,6 +305,11 @@ async function verifyOtpAndProceed() {
 }
 
 async function googleSignIn() {
+  // 1. Instantly trigger the popup to prevent browser popup blockers!
+  const provider = new firebase.auth.GoogleAuthProvider();
+  const signInPromise = auth.signInWithPopup(provider);
+
+  // 2. Now safely perform UI updates while the popup is opening
   const containerId = "student-login";
   displayMessage(containerId, "");
 
@@ -312,20 +317,45 @@ async function googleSignIn() {
   if (btn && btn.disabled) return;
   const originalText = btn ? btn.innerHTML : "Sign in with Google";
   if (btn) {
-    btn.innerHTML = `<span class="spinner"></span>Redirecting...`;
+    btn.innerHTML = `<span class="spinner"></span>Signing in...`;
     btn.disabled = true;
   }
 
-  // Set a flag to catch the redirect when the page reloads!
-  sessionStorage.setItem("googleLoginPending", "true");
-
-  const provider = new firebase.auth.GoogleAuthProvider();
   try {
-    await auth.signInWithRedirect(provider);
+    const result = await signInPromise;
+    const user = result.user;
+
+    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/login/google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: user.email })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      localStorage.setItem("authToken", data.token);
+      showSuccessPopup("Login Successful!", "./student/student-dashboard.html");
+    } else if (data.requireRegistration) {
+      showRegister();
+      displayMessage("regStep2", "Account not found. Please complete your registration details.", false);
+      
+      document.getElementById("regEmail").value = user.email;
+      document.getElementById("regName").value = user.displayName;
+      
+      window.isGoogleSignIn = true;
+      document.getElementById("regStep1").style.display = 'none';
+      document.getElementById("regStep2").style.display = 'flex';
+      (document.getElementById("regPasswordContainer") || document.getElementById("regPassword")).style.display = 'none';
+      const regConfirm = document.getElementById("regConfirmPasswordContainer") || document.getElementById("regConfirmPassword");
+      if (regConfirm) regConfirm.style.display = 'none';
+    }
   } catch (error) {
     console.error(error);
-    sessionStorage.removeItem("googleLoginPending");
-    displayMessage(containerId, "Google Sign-In failed: " + error.message);
+    // Ignore the error if the user intentionally closed the Google popup window
+    if (error.code !== "auth/popup-closed-by-user" && error.code !== "auth/cancelled-popup-request") {
+      displayMessage(containerId, "Google Sign-In failed: " + error.message);
+    }
+  } finally {
     if (btn) {
       btn.innerHTML = originalText;
       btn.disabled = false;
@@ -583,105 +613,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (element) element.addEventListener("keypress", (e) => handleEnter(e, action));
   });
 
-  // If we are expecting a redirect back from Google, show a full-screen loading overlay
-  if (sessionStorage.getItem("googleLoginPending") === "true") {
-    const loader = document.createElement("div");
-    loader.id = "google-loader";
-    loader.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:#f4f7f6;z-index:10000;display:flex;flex-direction:column;justify-content:center;align-items:center;";
-    loader.innerHTML = `<div class="spinner" style="width: 50px; height: 50px; border-width: 5px; border-color: rgba(30, 60, 114, 0.2); border-top-color: #1e3c72; margin-bottom: 20px;"></div><h2 style="color: #333; font-family: sans-serif;">Completing Google Sign-In...</h2>`;
-    document.body.appendChild(loader);
-
-    let handled = false;
-    
-    // Robust handler that fires exactly once when the user is located
-    const handleGoogleUser = async (user) => {
-      if (handled) return;
-      handled = true;
-      sessionStorage.removeItem("googleLoginPending");
-
-      if (user) {
-        showLogin("student");
-        if (loader) loader.remove();
-
-        const btn = document.querySelector('button[onclick="googleSignIn()"]');
-        let originalText = "Sign in with Google";
-        if (btn) {
-          originalText = btn.innerHTML;
-          btn.innerHTML = `<span class="spinner"></span>Signing in...`;
-          btn.disabled = true;
-        }
-
-        try {
-          const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/login/google", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: user.email })
-          });
-          const data = await res.json();
-
-          if (data.success) {
-            localStorage.setItem("authToken", data.token);
-            showSuccessPopup("Login Successful!", "./student/student-dashboard.html");
-          } else if (data.requireRegistration) {
-            showRegister();
-            displayMessage("regStep2", "Account not found. Please complete your registration details.", false);
-
-            document.getElementById("regEmail").value = user.email;
-            document.getElementById("regName").value = user.displayName;
-
-            window.isGoogleSignIn = true;
-            document.getElementById("regStep1").style.display = 'none';
-            document.getElementById("regStep2").style.display = 'flex';
-            (document.getElementById("regPasswordContainer") || document.getElementById("regPassword")).style.display = 'none';
-            const regConfirm = document.getElementById("regConfirmPasswordContainer") || document.getElementById("regConfirmPassword");
-            if (regConfirm) regConfirm.style.display = 'none';
-          }
-        } catch (error) {
-          console.error(error);
-          displayMessage("student-login", "Google Sign-In failed: " + error.message);
-        } finally {
-          if (btn) {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-          }
-        }
-      } else {
-        // The user cancelled the Google sign in popup/redirect window and backed out
-        if (loader) loader.remove();
-        showLogin("student");
-      }
-    };
-
-    // Method 1: Listen to auth state changes (Guaranteed to catch Firebase browser anomalies)
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
-        unsubscribe();
-        handleGoogleUser(user);
-      }
-    });
-
-    // Method 2: Wait for redirect result (Standard behavior)
-    auth.getRedirectResult().then((result) => {
-      if (result && result.user) {
-        unsubscribe();
-        handleGoogleUser(result.user);
-      } else {
-        // Wait a slight buffer for onAuthStateChanged just in case before failing
-        setTimeout(() => {
-          unsubscribe();
-          handleGoogleUser(null);
-        }, 2000);
-      }
-    }).catch((error) => {
-      unsubscribe();
-      handled = true;
-      sessionStorage.removeItem("googleLoginPending");
-      if (loader) loader.remove();
-      showLogin("student");
-      displayMessage("student-login", "Google Sign-In failed: " + error.message);
-    });
-  } else {
-    // Show the role selection landing page by default
-    showRoleSelection();
-  }
+  // Show the role selection landing page by default
+  showRoleSelection();
 });

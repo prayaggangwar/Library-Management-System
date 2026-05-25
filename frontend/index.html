@@ -12,6 +12,48 @@
     button:active, .shadow__btn:active {
       transform: scale(0.92) !important;
     }
+
+    /* Responsive Interface (Adapts to browser aspect ratio and size) */
+    .container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 5vw; /* Fluid padding based on viewport width */
+      box-sizing: border-box;
+    }
+    .login-box {
+      width: 100%;
+      max-width: 450px; /* Constrains width on ultrawide monitors */
+      box-sizing: border-box;
+    }
+    @media (max-width: 500px) {
+      .otp-group {
+        flex-direction: column !important;
+      }
+      .tabs {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+    }
+
+    /* Loading Spinner */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+      margin-top: -2px; /* Slight optical adjustment to vertically center */
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -63,7 +105,7 @@
         
         <div id="regStep1" style="display: flex; flex-direction: column; gap: 15px;">
           <input class="input" id="regEmail" placeholder="Email Address">
-          <div id="regOtpSection" style="display: flex; gap: 10px;">
+          <div id="regOtpSection" class="otp-group" style="display: flex; gap: 10px;">
             <input class="input" id="regOtp" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" placeholder="Enter Email OTP" style="flex: 1;">
             <button class="shadow__btn" style="padding: 10px;" onclick="sendOTP('regEmail', 'register')">Send OTP</button>
           </div>
@@ -98,7 +140,7 @@
       <div id="student-reset-password" class="login-form hidden" style="gap: 15px;">
         <h2>Reset Password</h2>
         <input class="input" id="resetEmail" placeholder="Registered Email Address">
-        <div style="display: flex; gap: 10px;">
+        <div class="otp-group" style="display: flex; gap: 10px;">
           <input class="input" id="resetOtp" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" placeholder="Enter Email OTP" style="flex: 1;">
           <button class="shadow__btn" style="padding: 10px;" onclick="sendOTP('resetEmail', 'reset')">Send OTP</button>
         </div>
@@ -122,7 +164,7 @@
       <div id="librarian-login" class="login-form hidden">
         <h2>Librarian Login</h2>
         <input class="input" id="librarianEmail" placeholder="Librarian Email Address">
-        <div style="display: flex; gap: 10px;">
+        <div class="otp-group" style="display: flex; gap: 10px;">
           <input class="input" id="librarianOtp" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" placeholder="Enter Email OTP" style="flex: 1;">
           <button class="shadow__btn" style="padding: 10px;" onclick="sendOTP('librarianEmail', 'login')">Send OTP</button>
         </div>

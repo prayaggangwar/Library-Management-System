@@ -27,7 +27,45 @@ function togglePassword(inputId, icon) {
 
 window.isGoogleSignIn = false; // State flag to assist with seamless Google auto-registration
 
+function clearMessages() {
+  document.querySelectorAll('.inline-message').forEach(el => el.innerText = '');
+}
+
+function displayMessage(containerId, message, isError = true) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  
+  let msgDiv = container.querySelector(':scope > .inline-message');
+  
+  if (!message) {
+    if (msgDiv) msgDiv.innerText = '';
+    return;
+  }
+
+  if (!msgDiv) {
+    msgDiv = document.createElement('div');
+    msgDiv.className = 'inline-message';
+    msgDiv.style.fontSize = '14px';
+    msgDiv.style.marginTop = '-5px';
+    msgDiv.style.marginBottom = '10px';
+    msgDiv.style.textAlign = 'center';
+    msgDiv.style.fontWeight = 'bold';
+    
+    // find the first direct button to insert before (skipping nested OTP buttons)
+    const btn = container.querySelector(':scope > button');
+    if (btn) {
+      container.insertBefore(msgDiv, btn);
+    } else {
+      container.appendChild(msgDiv);
+    }
+  }
+  
+  msgDiv.style.color = isError ? '#ff4d4d' : '#28a745';
+  msgDiv.innerText = message;
+}
+
 function showLogin(type) {
+  clearMessages();
   window.isGoogleSignIn = false;
   localStorage.setItem('lastLoginTab', type);
   const regStep1 = document.getElementById("regStep1");
@@ -66,6 +104,7 @@ function showLogin(type) {
 }
 
 function showRegister() {
+  clearMessages();
   document.getElementById("student-login").classList.add("hidden");
   document.getElementById("librarian-login").classList.add("hidden");
   const reset = document.getElementById("student-reset-password");
@@ -80,50 +119,51 @@ function showRegister() {
 }
 
 function showResetPassword() {
+  clearMessages();
   document.getElementById("student-login").classList.add("hidden");
   document.getElementById("librarian-login").classList.add("hidden");
   document.getElementById("student-register").classList.add("hidden");
   document.getElementById("student-reset-password").classList.remove("hidden");
 }
 
-let globalOtpTimer = null;
+let countdown;
 
-function updateOtpButtons() {
-  const expiry = parseInt(localStorage.getItem('otpCooldownExpiry') || '0', 10);
-  const now = Date.now();
-  const timeLeft = Math.ceil((expiry - now) / 1000);
+function startOtpTimer(otpButton) {
+  let timeLeft = 30;
 
-  const btns = [
-    document.querySelector('#regOtpSection button'),
-    document.querySelector('#student-reset-password button'),
-    document.querySelector('#librarian-login div button')
-  ].filter(Boolean);
+  // stop old timer first
+  clearInterval(countdown);
 
-  if (timeLeft > 0) {
-    btns.forEach(btn => {
-      btn.disabled = true;
-      btn.innerText = `Wait ${timeLeft}s`;
-    });
-    if (!globalOtpTimer) {
-      globalOtpTimer = setInterval(updateOtpButtons, 1000);
-    }
-  } else {
-    btns.forEach(btn => {
-      if (btn.innerText.startsWith("Wait")) {
-        btn.disabled = false;
-        btn.innerText = "Send OTP";
-      }
-    });
-    if (globalOtpTimer) {
-      clearInterval(globalOtpTimer);
-      globalOtpTimer = null;
-    }
+  if (otpButton) {
+    otpButton.disabled = true;
+    otpButton.innerHTML = `✅ Sent! (${timeLeft}s)`;
   }
+
+  countdown = setInterval(() => {
+    timeLeft--;
+
+    if (timeLeft < 0) {
+      clearInterval(countdown);
+      if (otpButton) {
+        otpButton.disabled = false;
+        otpButton.innerText = "Send OTP";
+      }
+    } else if (otpButton) {
+      otpButton.innerHTML = `✅ Sent! (${timeLeft}s)`;
+    }
+  }, 1000);
 }
 
 async function sendOTP(emailInputId, type) {
+  let containerId = 'student-register';
+  if (emailInputId === 'regEmail') containerId = 'regStep1';
+  else if (emailInputId === 'resetEmail') containerId = 'student-reset-password';
+  else if (emailInputId === 'librarianEmail') containerId = 'librarian-login';
+
+  displayMessage(containerId, "");
+
   let email = document.getElementById(emailInputId).value.trim();
-  if (!email) { alert("Please enter an email address first!"); return; }
+  if (!email) { displayMessage(containerId, "Please enter an email address first!"); return; }
 
   // Get the button to show a loading state
   let btn = null;
@@ -132,7 +172,7 @@ async function sendOTP(emailInputId, type) {
   else if (emailInputId === 'librarianEmail') btn = document.querySelector('#librarian-login div button');
 
   if (btn) {
-    btn.innerText = "Sending...";
+    btn.innerHTML = `<span class="spinner"></span>Sending...`;
     btn.disabled = true;
   }
 
@@ -145,18 +185,18 @@ async function sendOTP(emailInputId, type) {
     const data = await res.json();
 
     if (data.success) {
-      const expiry = Date.now() + 30000; // Current time + 30 seconds
-      localStorage.setItem('otpCooldownExpiry', expiry.toString());
-      updateOtpButtons();
-    } else if (btn) {
-      btn.innerText = "Send OTP";
-      btn.disabled = false;
+      startOtpTimer(btn);
+      displayMessage(containerId, data.message, false);
+    } else {
+      if (btn) {
+        btn.innerText = "Send OTP";
+        btn.disabled = false;
+      }
+      displayMessage(containerId, data.message);
     }
-
-    alert(data.message);
   } catch (error) { 
     console.error(error); 
-    alert("Connection Error: Your backend is not reachable! Please ensure 'node server.js' is running in your terminal."); 
+    displayMessage(containerId, "Connection Error: Your backend is not reachable! Please ensure 'node server.js' is running in your terminal."); 
     if (btn) {
       btn.innerText = "Send OTP";
       btn.disabled = false;
@@ -165,12 +205,23 @@ async function sendOTP(emailInputId, type) {
 }
 
 async function verifyOtpAndProceed() {
+  const containerId = "regStep1";
+  displayMessage(containerId, "");
+
   const email = document.getElementById("regEmail").value.trim();
   const otp = document.getElementById("regOtp").value.trim();
 
   if (!email || !otp) {
-    alert("Please enter email and OTP.");
+    displayMessage(containerId, "Please enter email and OTP.");
     return;
+  }
+
+  const btn = document.querySelector('button[onclick="verifyOtpAndProceed()"]');
+  if (btn && btn.disabled) return;
+  const originalText = btn ? btn.innerHTML : "Verify OTP & Continue";
+  if (btn) {
+    btn.innerHTML = `<span class="spinner"></span>Verifying...`;
+    btn.disabled = true;
   }
 
   try {
@@ -187,19 +238,35 @@ async function verifyOtpAndProceed() {
     const data = await res.json();
     
     if (data.success) {
-      alert("Email verified! Please fill in your details.");
       document.getElementById("regStep1").style.display = "none";
       document.getElementById("regStep2").style.display = "flex";
+      displayMessage("regStep2", "Email verified! Please fill in your details.", false);
     } else {
-      alert(data.message);
+      displayMessage(containerId, data.message);
     }
   } catch (err) {
     console.error(err);
-    alert("Verification failed: " + (err.message || "Server error"));
+    displayMessage(containerId, "Verification failed: " + (err.message || "Server error"));
+  } finally {
+    if (btn) {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
   }
 }
 
 async function googleSignIn() {
+  const containerId = "student-login";
+  displayMessage(containerId, "");
+
+  const btn = document.querySelector('button[onclick="googleSignIn()"]');
+  if (btn && btn.disabled) return;
+  const originalText = btn ? btn.innerHTML : "Sign in with Google";
+  if (btn) {
+    btn.innerHTML = `<span class="spinner"></span>Signing in...`;
+    btn.disabled = true;
+  }
+
   const provider = new firebase.auth.GoogleAuthProvider();
   try {
     const result = await auth.signInWithPopup(provider);
@@ -216,8 +283,8 @@ async function googleSignIn() {
       localStorage.setItem("authToken", data.token);
       window.location.href = "./student/student-dashboard.html";
     } else if (data.requireRegistration) {
-      alert("Account not found. Please complete your registration details.");
       showRegister();
+      displayMessage("regStep2", "Account not found. Please complete your registration details.", false);
       
       document.getElementById("regEmail").value = user.email;
       document.getElementById("regName").value = user.displayName;
@@ -232,11 +299,19 @@ async function googleSignIn() {
     }
   } catch (error) {
     console.error(error);
-    alert("Google Sign-In failed: " + error.message);
+    displayMessage(containerId, "Google Sign-In failed: " + error.message);
+  } finally {
+    if (btn) {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
   }
 }
 
 async function registerStudent() {
+  const containerId = "regStep2";
+  displayMessage(containerId, "");
+
   const name = document.getElementById("regName").value.trim();
   const email = document.getElementById("regEmail").value.trim();
   const course = document.getElementById("regCourse").value.trim();
@@ -248,18 +323,26 @@ async function registerStudent() {
 
   // If it's a Google sign in, we bypass the custom password and OTP validation.
   if (!name || !email || !course || !semester || (!window.isGoogleSignIn && (!pass || !confirmPass || !otp))) {
-    alert("Please fill in all required fields!");
+    displayMessage(containerId, "Please fill in all required fields!");
     return;
   }
 
   if (!window.isGoogleSignIn && pass.length < 6) {
-    alert("Password must be at least 6 characters long!");
+    displayMessage(containerId, "Password must be at least 6 characters long!");
     return;
   }
 
   if (!window.isGoogleSignIn && pass !== confirmPass) {
-    alert("Passwords do not match!");
+    displayMessage(containerId, "Passwords do not match!");
     return;
+  }
+
+  const btn = document.querySelector('button[onclick="registerStudent()"]');
+  if (btn && btn.disabled) return;
+  const originalText = btn ? btn.innerHTML : "Register";
+  if (btn) {
+    btn.innerHTML = `<span class="spinner"></span>Registering...`;
+    btn.disabled = true;
   }
 
   try {
@@ -271,42 +354,58 @@ async function registerStudent() {
     const data = await res.json();
     
     if (data.success) {
-      alert(data.message);
       if (window.isGoogleSignIn) {
         localStorage.setItem("authToken", data.token);
         window.location.href = "./student/student-dashboard.html";
       } else {
         ["regName", "regEmail", "regCourse", "regSemester", "regPassword", "regConfirmPassword", "regPhone", "regOtp"].forEach(field => document.getElementById(field).value = "");
         showLogin("student");
+        displayMessage("student-login", data.message, false);
       }
     } else {
-      alert(data.message);
+      displayMessage(containerId, data.message);
     }
   } catch (err) {
     console.error(err);
-    alert("Registration failed: " + (err.message || "Server error"));
+    displayMessage(containerId, "Registration failed: " + (err.message || "Server error"));
+  } finally {
+    if (btn) {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
   }
 }
 
 async function resetPassword() {
+  const containerId = "student-reset-password";
+  displayMessage(containerId, "");
+
   const email = document.getElementById("resetEmail").value.trim();
   const otp = document.getElementById("resetOtp").value.trim();
   const newPassword = document.getElementById("resetNewPassword").value.trim();
   const confirmPassword = document.getElementById("resetConfirmPassword").value.trim();
 
   if (!email || !otp || !newPassword || !confirmPassword) {
-    alert("Please fill in all fields!");
+    displayMessage(containerId, "Please fill in all fields!");
     return;
   }
 
   if (newPassword.length < 6) {
-    alert("Password must be at least 6 characters long!");
+    displayMessage(containerId, "Password must be at least 6 characters long!");
     return;
   }
 
   if (newPassword !== confirmPassword) {
-    alert("Passwords do not match!");
+    displayMessage(containerId, "Passwords do not match!");
     return;
+  }
+
+  const btn = document.querySelector('button[onclick="resetPassword()"]');
+  if (btn && btn.disabled) return;
+  const originalText = btn ? btn.innerHTML : "Reset Password";
+  if (btn) {
+    btn.innerHTML = `<span class="spinner"></span>Resetting...`;
+    btn.disabled = true;
   }
 
   try {
@@ -318,17 +417,25 @@ async function resetPassword() {
     const data = await res.json();
     
     if (data.success) {
-      alert("Password reset successfully! You can now log in.");
       ["resetEmail", "resetOtp", "resetNewPassword", "resetConfirmPassword"].forEach(f => document.getElementById(f).value = "");
       showLogin("student");
-    } else { alert(data.message); }
+      displayMessage("student-login", "Password reset successfully! You can now log in.", false);
+    } else { displayMessage(containerId, data.message); }
   } catch (err) { 
     console.error(err); 
-    alert("Reset failed: " + (err.message || "Server error.")); 
+    displayMessage(containerId, "Reset failed: " + (err.message || "Server error.")); 
+  } finally {
+    if (btn) {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
   }
 }
 
 async function studentLogin() {
+  const containerId = "student-login";
+  displayMessage(containerId, "");
+
   const emailInput = document.getElementById("studentEmail");
   const passInput = document.getElementById("studentPassword");
   
@@ -336,8 +443,16 @@ async function studentLogin() {
   const pass = passInput ? passInput.value.trim() : "";
 
   if (!email || !pass) {
-    alert("Please enter Email Address and Password!");
+    displayMessage(containerId, "Please enter Email Address and Password!");
     return;
+  }
+
+  const btn = document.querySelector('button[onclick="studentLogin()"]');
+  if (btn && btn.disabled) return;
+  const originalText = btn ? btn.innerHTML : "Login";
+  if (btn) {
+    btn.innerHTML = `<span class="spinner"></span>Logging in...`;
+    btn.disabled = true;
   }
 
   try {
@@ -352,15 +467,23 @@ async function studentLogin() {
       localStorage.setItem("authToken", data.token);
       window.location.href = "./student/student-dashboard.html";
     } else {
-      alert(data.message || "Invalid Email or Password!");
+      displayMessage(containerId, data.message || "Invalid Email or Password!");
     }
   } catch (err) {
     console.error(err);
-    alert("Server error. Please ensure the backend is running.");
+    displayMessage(containerId, "Server error. Please ensure the backend is running.");
+  } finally {
+    if (btn) {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
   }
 }
 
 async function librarianLogin() {
+  const containerId = "librarian-login";
+  displayMessage(containerId, "");
+
   const emailInput = document.getElementById("librarianEmail");
   const otpInput = document.getElementById("librarianOtp");
   
@@ -368,8 +491,16 @@ async function librarianLogin() {
   const otp = otpInput ? otpInput.value.trim() : "";
 
   if (!email || !otp) {
-    alert("Please enter Email Address and OTP!");
+    displayMessage(containerId, "Please enter Email Address and OTP!");
     return;
+  }
+
+  const btn = document.querySelector('button[onclick="librarianLogin()"]');
+  if (btn && btn.disabled) return;
+  const originalText = btn ? btn.innerHTML : "Login";
+  if (btn) {
+    btn.innerHTML = `<span class="spinner"></span>Logging in...`;
+    btn.disabled = true;
   }
 
   try {
@@ -384,11 +515,16 @@ async function librarianLogin() {
       localStorage.setItem("authToken", data.token);
       window.location.href = "./librarian/librarian-dashboard.html";
     } else {
-      alert(data.message || "Invalid Email or OTP!");
+      displayMessage(containerId, data.message || "Invalid Email or OTP!");
     }
   } catch (err) {
     console.error(err);
-    alert("Server error. Please ensure the backend is running.");
+    displayMessage(containerId, "Server error. Please ensure the backend is running.");
+  } finally {
+    if (btn) {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
   }
 }
 
@@ -425,5 +561,4 @@ document.addEventListener("DOMContentLoaded", () => {
   // Retrieve the last selected tab from localStorage, defaulting to 'student'
   const lastTab = localStorage.getItem('lastLoginTab') || 'student';
   showLogin(lastTab);
-  updateOtpButtons();
 });

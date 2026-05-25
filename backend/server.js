@@ -305,9 +305,17 @@ app.post("/api/login/student", async (req, res) => {
 app.post("/api/login/librarian", (req, res) => {
   const { email, otp } = req.body;
   const normalizedEmail = email.toLowerCase().trim();
-  const authorizedEmails = (process.env.LIBRARIAN_EMAIL || "classmate11007@gmail.com").split(',').map(e => e.trim().toLowerCase());
-  const authorizedEmails = (process.env.LIBRARIAN_EMAIL || "aavararebel@gmail.com").split(',').map(e => e.trim().toLowerCase());
+  const authorizedEmails = (
 
+  process.env.LIBRARIAN_EMAIL ||
+
+  "aavararebel@gmail.com,classmate11007@gmail.com"
+
+)
+
+.split(',')
+
+.map(email => email.trim().toLowerCase());
 
   if (!authorizedEmails.includes(normalizedEmail)) {
     return res.status(401).json({ success: false, message: "Unauthorized Librarian Email!" });

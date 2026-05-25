@@ -92,10 +92,26 @@ function showSuccessPopup(message, redirectUrl) {
   setTimeout(() => { window.location.href = redirectUrl; }, 1500);
 }
 
+function showRoleSelection() {
+  clearMessages();
+  const roleSelection = document.getElementById("role-selection");
+  if (roleSelection) roleSelection.style.display = "flex";
+  
+  document.getElementById("student-login").classList.add("hidden");
+  document.getElementById("librarian-login").classList.add("hidden");
+  const studentRegister = document.getElementById("student-register");
+  const studentReset = document.getElementById("student-reset-password");
+  if (studentRegister) studentRegister.classList.add("hidden");
+  if (studentReset) studentReset.classList.add("hidden");
+}
+
 function showLogin(type) {
   clearMessages();
   window.isGoogleSignIn = false;
-  localStorage.setItem('lastLoginTab', type);
+
+  const roleSelection = document.getElementById("role-selection");
+  if (roleSelection) roleSelection.style.display = "none";
+
   const regStep1 = document.getElementById("regStep1");
   const regStep2 = document.getElementById("regStep2");
   const regPassword = document.getElementById("regPasswordContainer") || document.getElementById("regPassword");
@@ -170,7 +186,7 @@ function startOtpTimer(otpButton) {
   countdown = setInterval(() => {
     timeLeft--;
 
-    if (timeLeft < 0) {
+    if (timeLeft <= 0) {
       clearInterval(countdown);
       if (otpButton) {
         otpButton.disabled = false;
@@ -195,9 +211,10 @@ async function sendOTP(emailInputId, type) {
 
   // Get the button to show a loading state
   let btn = null;
-  if (emailInputId === 'regEmail') btn = document.querySelector('#regOtpSection button');
-  else if (emailInputId === 'resetEmail') btn = document.querySelector('#student-reset-password button');
-  else if (emailInputId === 'librarianEmail') btn = document.querySelector('#librarian-login div button');
+  let otpInputId = null;
+  if (emailInputId === 'regEmail') { btn = document.querySelector('#regOtpSection button'); otpInputId = 'regOtp'; }
+  else if (emailInputId === 'resetEmail') { btn = document.querySelector('#student-reset-password button'); otpInputId = 'resetOtp'; }
+  else if (emailInputId === 'librarianEmail') { btn = document.querySelector('#librarian-login div button'); otpInputId = 'librarianOtp'; }
 
   if (btn) {
     btn.innerHTML = `<span class="spinner"></span>Sending...`;
@@ -215,6 +232,10 @@ async function sendOTP(emailInputId, type) {
     if (data.success) {
       startOtpTimer(btn);
       displayMessage(containerId, data.message, false);
+      if (otpInputId) {
+        const otpInput = document.getElementById(otpInputId);
+        if (otpInput) otpInput.focus();
+      }
     } else {
       if (btn) {
         btn.innerText = "Send OTP";
@@ -586,7 +607,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (element) element.addEventListener("keypress", (e) => handleEnter(e, action));
   });
 
-  // Retrieve the last selected tab from localStorage, defaulting to 'student'
-  const lastTab = localStorage.getItem('lastLoginTab') || 'student';
-  showLogin(lastTab);
+  // Show the role selection landing page by default
+  showRoleSelection();
 });

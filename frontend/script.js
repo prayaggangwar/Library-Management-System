@@ -64,6 +64,34 @@ function displayMessage(containerId, message, isError = true) {
   msgDiv.innerText = message;
 }
 
+function showSuccessPopup(message, redirectUrl) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 10000; opacity: 0; transition: opacity 0.3s ease;
+  `;
+
+  const popup = document.createElement('div');
+  popup.style.cssText = `
+    background: white; padding: 40px; border-radius: 12px;
+    text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    transform: scale(0.5); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  `;
+
+  popup.innerHTML = `
+    <div style="font-size: 60px; line-height: 1; margin-bottom: 15px;">✅</div>
+    <h2 style="margin: 0; color: #333; font-family: sans-serif;">${message}</h2>
+  `;
+
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
+
+  setTimeout(() => { overlay.style.opacity = '1'; popup.style.transform = 'scale(1)'; }, 10);
+  setTimeout(() => { window.location.href = redirectUrl; }, 1500);
+}
+
 function showLogin(type) {
   clearMessages();
   window.isGoogleSignIn = false;
@@ -281,7 +309,7 @@ async function googleSignIn() {
 
     if (data.success) {
       localStorage.setItem("authToken", data.token);
-      window.location.href = "./student/student-dashboard.html";
+      showSuccessPopup("Login Successful!", "./student/student-dashboard.html");
     } else if (data.requireRegistration) {
       showRegister();
       displayMessage("regStep2", "Account not found. Please complete your registration details.", false);
@@ -356,7 +384,7 @@ async function registerStudent() {
     if (data.success) {
       if (window.isGoogleSignIn) {
         localStorage.setItem("authToken", data.token);
-        window.location.href = "./student/student-dashboard.html";
+        showSuccessPopup("Registration Successful!", "./student/student-dashboard.html");
       } else {
         ["regName", "regEmail", "regCourse", "regSemester", "regPassword", "regConfirmPassword", "regPhone", "regOtp"].forEach(field => document.getElementById(field).value = "");
         showLogin("student");
@@ -465,7 +493,7 @@ async function studentLogin() {
     
     if (data.success) {
       localStorage.setItem("authToken", data.token);
-      window.location.href = "./student/student-dashboard.html";
+      showSuccessPopup("Login Successful!", "./student/student-dashboard.html");
     } else {
       displayMessage(containerId, data.message || "Invalid Email or Password!");
     }
@@ -513,7 +541,7 @@ async function librarianLogin() {
     
     if (data.success) {
       localStorage.setItem("authToken", data.token);
-      window.location.href = "./librarian/librarian-dashboard.html";
+      showSuccessPopup("Login Successful!", "./librarian/librarian-dashboard.html");
     } else {
       displayMessage(containerId, data.message || "Invalid Email or OTP!");
     }

@@ -64,7 +64,7 @@
         <div id="regStep1" style="display: flex; flex-direction: column; gap: 15px;">
           <input class="input" id="regEmail" placeholder="Email Address">
           <div id="regOtpSection" style="display: flex; gap: 10px;">
-            <input class="input" id="regOtp" placeholder="Enter Email OTP" style="flex: 1;">
+            <input class="input" id="regOtp" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" placeholder="Enter Email OTP" style="flex: 1;">
             <button class="shadow__btn" style="padding: 10px;" onclick="sendOTP('regEmail', 'register')">Send OTP</button>
           </div>
           <button class="shadow__btn" onclick="verifyOtpAndProceed()">
@@ -99,7 +99,7 @@
         <h2>Reset Password</h2>
         <input class="input" id="resetEmail" placeholder="Registered Email Address">
         <div style="display: flex; gap: 10px;">
-          <input class="input" id="resetOtp" placeholder="Enter Email OTP" style="flex: 1;">
+          <input class="input" id="resetOtp" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" placeholder="Enter Email OTP" style="flex: 1;">
           <button class="shadow__btn" style="padding: 10px;" onclick="sendOTP('resetEmail', 'reset')">Send OTP</button>
         </div>
         <div style="position: relative;">
@@ -123,7 +123,7 @@
         <h2>Librarian Login</h2>
         <input class="input" id="librarianEmail" placeholder="Librarian Email Address">
         <div style="display: flex; gap: 10px;">
-          <input class="input" id="librarianOtp" placeholder="Enter Email OTP" style="flex: 1;">
+          <input class="input" id="librarianOtp" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" placeholder="Enter Email OTP" style="flex: 1;">
           <button class="shadow__btn" style="padding: 10px;" onclick="sendOTP('librarianEmail', 'login')">Send OTP</button>
         </div>
         <button class="shadow__btn" onclick="librarianLogin()">

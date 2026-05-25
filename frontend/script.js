@@ -422,15 +422,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (element) element.addEventListener("keypress", (e) => handleEnter(e, action));
   });
 
-  // Prevent email autofill in OTP fields by explicitly setting autocomplete attribute
-  const otpFields = ["regOtp", "resetOtp", "librarianOtp"];
-  otpFields.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.setAttribute("autocomplete", "one-time-code");
-    }
-  });
-
   // Retrieve the last selected tab from localStorage, defaulting to 'student'
   const lastTab = localStorage.getItem('lastLoginTab') || 'student';
   showLogin(lastTab);

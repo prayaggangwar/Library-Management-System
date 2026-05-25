@@ -6,6 +6,7 @@ if (!token) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  fetchStats();
   fetchLibrarians();
   
   const payload = JSON.parse(atob(token.split('.')[1]));
@@ -30,6 +31,16 @@ function logout() {
   window.location.href = "./index.html";
 }
 
+async function fetchStats() {
+  try {
+    const res = await fetch(`${API_URL}/stats`);
+    const stats = await res.json();
+    document.getElementById("adminTotalCollected").innerText = stats.totalFinesCollected || 0;
+  } catch (err) {
+    console.error("Failed to load stats", err);
+  }
+}
+
 async function fetchLibrarians() {
   try {
     const res = await fetch(`${API_URL}/librarians`, {
@@ -42,6 +53,8 @@ async function fetchLibrarians() {
     }
     const librarians = await res.json();
     
+    document.getElementById("adminTotalLibrarians").innerText = librarians.length;
+
     const tbody = document.getElementById("librarianList");
     tbody.innerHTML = "";
     

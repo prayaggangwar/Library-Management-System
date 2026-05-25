@@ -54,6 +54,13 @@
         width: 100% !important;
         padding: 15px !important;
       }
+      .cards {
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      .card {
+        margin: 5px 0 !important;
+      }
       .topbar {
         flex-direction: column;
         align-items: center;
@@ -103,6 +110,17 @@
     </div>
     <div class="topbar-right">
       <button id="darkModeBtn" onclick="toggleDarkMode()">🌙</button>
+    </div>
+  </div>
+
+  <div class="cards" style="margin-bottom: 25px;">
+    <div class="card">
+      <h3>Total Fine Collected</h3>
+      <p>₹<span id="adminTotalCollected">0</span></p>
+    </div>
+    <div class="card">
+      <h3>Authorized Librarians</h3>
+      <p id="adminTotalLibrarians">0</p>
     </div>
   </div>
 

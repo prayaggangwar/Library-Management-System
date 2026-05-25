@@ -72,6 +72,12 @@ const librarianSchema = new mongoose.Schema({
 });
 const Librarian = mongoose.model("Librarian", librarianSchema);
 
+const statSchema = new mongoose.Schema({
+  id: { type: String, default: 'global' },
+  totalFinesCollected: { type: Number, default: 0 }
+});
+const Stat = mongoose.model("Stat", statSchema);
+
 // --- DATABASE INITIALIZATION ---
 async function initializeDB() {
   try {
@@ -97,6 +103,12 @@ async function initializeDB() {
     if (libCount === 0) {
       await Librarian.insertMany([{ email: "aavararebel@gmail.com" }]);
       console.log("Database initialized with default librarian emails.");
+    }
+
+    const statCount = await Stat.countDocuments();
+    if (statCount === 0) {
+      await Stat.create({ id: 'global', totalFinesCollected: 0 });
+      console.log("Database initialized with global stats tracker.");
     }
   } catch (err) {
     console.error("Database initialization failed:", err.message);
@@ -363,6 +375,12 @@ app.post("/api/login/librarian", async (req, res) => {
   }
 });
 
+// --- STATS ENDPOINTS ---
+app.get("/api/stats", async (req, res) => {
+  let stats = await Stat.findOne({ id: 'global' });
+  res.json(stats || { totalFinesCollected: 0 });
+});
+
 // Admin endpoints
 app.get("/api/librarians", verifyAdmin, async (req, res) => {
   try {
@@ -558,7 +576,12 @@ app.put("/api/fines/:id", verifyLibrarian, async (req, res) => {
   }
 });
 app.delete("/api/fines/:id", async (req, res) => {
-  await Fine.findByIdAndDelete(req.params.id);
+  const fine = await Fine.findById(req.params.id);
+  if (fine) {
+    // Permanently record collected fine before deleting the active ticket
+    await Stat.findOneAndUpdate({ id: 'global' }, { $inc: { totalFinesCollected: fine.amount } }, { upsert: true });
+    await Fine.findByIdAndDelete(req.params.id);
+  }
   res.json({ success: true });
 });
 

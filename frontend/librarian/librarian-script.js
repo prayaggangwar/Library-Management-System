@@ -388,7 +388,20 @@ async function fetchFines() {
   }
 }
 
-let totalCollected = 0;
+async function fetchStats() {
+  try {
+    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/stats");
+    const stats = await res.json();
+    const total = stats.totalFinesCollected || 0;
+    
+    const totalCollectedEl = document.getElementById('totalCollected');
+    const dashTotalCollectedEl = document.getElementById('dashTotalCollected');
+    if (totalCollectedEl) totalCollectedEl.innerText = total;
+    if (dashTotalCollectedEl) dashTotalCollectedEl.innerText = total;
+  } catch (err) {
+    console.error("Failed to fetch stats", err);
+  }
+}
 
 function renderFines() {
   const list = document.getElementById('fineList');
@@ -419,10 +432,7 @@ async function collectFine(fineId, amount) {
     const data = await res.json();
     
     if (data.success) {
-      totalCollected += amount;
-      document.getElementById('totalCollected').innerText = totalCollected;
-      document.getElementById('dashTotalCollected').innerText = totalCollected;
-      
+      fetchStats();
       fetchFines();
     } else {
       alert("Failed to collect fine.");
@@ -537,6 +547,7 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchStudents();
   fetchBooks();
   fetchFines();
+  fetchStats();
 });
 
 // --- DARK MODE ---

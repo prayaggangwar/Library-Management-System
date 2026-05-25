@@ -624,7 +624,7 @@ async function adminLogin() {
     
     if (data.success) {
       localStorage.setItem("authToken", data.token);
-      showSuccessPopup("Login Successful!", "./admin/admin-dashboard.html");
+      showSuccessPopup("Login Successful!", "./admin-dashboard.html");
     } else {
       displayMessage(containerId, data.message || "Invalid Email or OTP!");
     }

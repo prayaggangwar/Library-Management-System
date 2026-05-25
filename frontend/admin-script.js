@@ -2,7 +2,7 @@ const API_URL = "https://library-management-system-1-vh1g.onrender.com/api";
 let token = localStorage.getItem("authToken");
 
 if (!token) {
-  window.location.href = "../index.html";
+  window.location.href = "./index.html";
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -27,7 +27,7 @@ function toggleDarkMode() {
 
 function logout() {
   localStorage.removeItem("authToken");
-  window.location.href = "../index.html";
+  window.location.href = "./index.html";
 }
 
 async function fetchLibrarians() {

@@ -9,6 +9,11 @@ let auth;
     }
     const firebaseConfig = await res.json();
 
+    if (!firebaseConfig.apiKey) {
+      console.error("Received empty config from server:", firebaseConfig);
+      throw new Error("Server returned empty Firebase keys! Make sure they are saved in your .env file or Render Dashboard.");
+    }
+
     // Initialize Firebase using the compat libraries imported in index.html
     firebase.initializeApp(firebaseConfig);
     auth = firebase.auth();
@@ -16,7 +21,7 @@ let auth;
     console.error("Could not initialize Firebase:", error);
     // Display an error to the user on the page
     const loginBox = document.querySelector('.login-box');
-    if (loginBox) loginBox.innerHTML = `<h1>Error</h1><p style="color: #ff4d4d; text-align: center;">Error loading configuration. If your server is running, check if your FIREBASE keys are in your .env file!</p>`;
+    if (loginBox) loginBox.innerHTML = `<h1>Error</h1><p style="color: #ff4d4d; text-align: center;">${error.message}</p><p style="text-align: center; color: #888; font-size: 14px;">Press F12 to check the browser console for more details.</p>`;
   }
 })();
 

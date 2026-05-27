@@ -17,6 +17,12 @@ let auth;
     // Initialize Firebase using the compat libraries imported in index.html
     firebase.initializeApp(firebaseConfig);
     auth = firebase.auth();
+
+    // Check if the user just returned from a Google Sign-In redirect
+    const redirectResult = await auth.getRedirectResult();
+    if (redirectResult && redirectResult.user) {
+      await processGoogleUser(redirectResult.user);
+    }
   } catch (error) {
     console.error("Could not initialize Firebase:", error);
     // Display an error to the user on the page
@@ -357,6 +363,9 @@ async function processGoogleUser(user) {
 async function googleSignIn() {
   // 1. Instantly trigger the popup to prevent browser popup blockers!
   const provider = new firebase.auth.GoogleAuthProvider();
+  provider.setCustomParameters({
+    prompt: 'select_account' // Forces Google to always ask which account to use
+  });
   const signInPromise = auth.signInWithPopup(provider);
 
   // 2. Now safely perform UI updates while the popup is opening
@@ -377,7 +386,8 @@ async function googleSignIn() {
   } catch (error) {
     console.error(error);
     if (error.code === "auth/popup-blocked") {
-      displayMessage(containerId, "Popup blocked. Please allow popups for this site and try again.");
+      displayMessage(containerId, "Popup blocked. Redirecting to Google...");
+      auth.signInWithRedirect(provider);
       return;
     }
     // Ignore the error if the user intentionally closed the Google popup window

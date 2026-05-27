@@ -384,14 +384,11 @@ async function processGoogleUser(user) {
 }
 
 async function googleSignIn() {
-  // 1. Instantly trigger the popup to prevent browser popup blockers!
   const provider = new firebase.auth.GoogleAuthProvider();
   provider.setCustomParameters({
     prompt: 'select_account' // Forces Google to always ask which account to use
   });
-  const signInPromise = auth.signInWithPopup(provider);
 
-  // 2. Now safely perform UI updates while the popup is opening
   const containerId = "student-login";
   displayMessage(containerId, "");
 
@@ -404,12 +401,13 @@ async function googleSignIn() {
   }
 
   try {
-    const result = await signInPromise;
+    // DIRECTLY TRIGGER POPUP FROM BUTTON CLICK
+    const result = await auth.signInWithPopup(provider);
     await processGoogleUser(result.user);
   } catch (error) {
     console.error(error);
     if (error.code === "auth/popup-blocked") {
-      displayMessage(containerId, "Popup blocked. Redirecting to Google...");
+      console.log("Popup blocked. Redirecting...");
       sessionStorage.setItem('pendingGoogleRedirect', 'true');
       auth.signInWithRedirect(provider);
       return;
@@ -419,7 +417,9 @@ async function googleSignIn() {
       displayMessage(containerId, "Google Sign-In failed: " + error.message);
     }
   } finally {
-    if (btn) {
+    // Do not reset the button back to "Sign in" if we are in the middle of a redirect!
+    const isRedirecting = sessionStorage.getItem('pendingGoogleRedirect') === 'true';
+    if (btn && !isRedirecting) {
       btn.innerHTML = originalText;
       btn.disabled = false;
     }

@@ -246,8 +246,8 @@ app.post("/api/send-email-otp", async (req, res) => {
       });
 
       const data = await emailResponse.json();
+      console.log("BREVO STATUS:", emailResponse.status);
       console.log("BREVO RESPONSE:", data);
-      console.log("STATUS:", emailResponse.status);
 
       if (!emailResponse.ok) {
          return res.status(500).json({

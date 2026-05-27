@@ -1,18 +1,24 @@
 // --- FIREBASE CONFIGURATION ---
-// This config object was copied from your Firebase project console.
-const firebaseConfig = {
-  apiKey: "AIzaSyDD2XO6I2HjIDoG29ANowrHBrxUdvuqPTI",
-  authDomain: "library-management-syste-dfda4.firebaseapp.com",
-  projectId: "library-management-syste-dfda4",
-  storageBucket: "library-management-syste-dfda4.appspot.com",
-  messagingSenderId: "825256769246",
-  appId: "1:825256769246:web:59940faa3e2b00aa26344f",
-  measurementId: "G-28FCP7EBLK"
-};
+let auth;
 
-// Initialize Firebase using the compat libraries imported in index.html
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
+(async function initializeFirebase() {
+  try {
+    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/config/firebase");
+    if (!res.ok) {
+      throw new Error(`Failed to fetch Firebase config: ${res.statusText}`);
+    }
+    const firebaseConfig = await res.json();
+
+    // Initialize Firebase using the compat libraries imported in index.html
+    firebase.initializeApp(firebaseConfig);
+    auth = firebase.auth();
+  } catch (error) {
+    console.error("Could not initialize Firebase:", error);
+    // Display an error to the user on the page
+    const loginBox = document.querySelector('.login-box');
+    if (loginBox) loginBox.innerHTML = `<h1>Error</h1><p style="color: #ff4d4d; text-align: center;">Could not connect to the server to load application configuration. Please try again later.</p>`;
+  }
+})();
 
 function togglePassword(inputId, icon) {
   const input = document.getElementById(inputId);

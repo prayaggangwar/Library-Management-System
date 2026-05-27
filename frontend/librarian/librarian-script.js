@@ -1,3 +1,8 @@
+let studentItemsPerPage = 10;
+let bookItemsPerPage = 10;
+let currentStudentPage = 1;
+let currentBookPage = 1;
+
 // --- CLOCK FUNCTIONALITY ---
 function updateClock() {
   const now = new Date();
@@ -44,6 +49,28 @@ function parseJwt(token) {
 // --- MANAGE STUDENTS ---
 let students = [];
 let currentStudentMode = 'list';
+let currentStudentFilter = '';
+
+function searchLibrarianStudents() {
+  currentStudentPage = 1;
+  const searchInput = document.getElementById("librarianSearchStudent");
+  currentStudentFilter = searchInput ? searchInput.value : "";
+  if (currentStudentMode === 'attendance') {
+    renderAttendance();
+  } else {
+    renderStudents();
+  }
+}
+
+function getFilteredStudents() {
+  if (!currentStudentFilter) return students;
+  const filter = currentStudentFilter.toLowerCase();
+  return students.filter(student => 
+    student.name.toLowerCase().includes(filter) ||
+    (student.email && student.email.toLowerCase().includes(filter)) ||
+    student.studentId.toLowerCase().includes(filter)
+  );
+}
 
 async function fetchStudents() {
   try {
@@ -70,7 +97,16 @@ function renderStudents() {
   const list = document.getElementById('studentList');
   if (!list) return;
   list.innerHTML = '';
-  students.forEach((student) => {
+  const filteredStudents = getFilteredStudents();
+  
+  const totalPages = Math.ceil(filteredStudents.length / studentItemsPerPage) || 1;
+  if (currentStudentPage > totalPages) currentStudentPage = totalPages;
+  
+  const start = (currentStudentPage - 1) * studentItemsPerPage;
+  const end = start + studentItemsPerPage;
+  const paginatedStudents = filteredStudents.slice(start, end);
+  
+  paginatedStudents.forEach((student) => {
     const li = document.createElement('li');
     const statusColor = student.present ? '#28a745' : '#ff4d4d';
     const statusText = student.present ? 'Present' : 'Absent';
@@ -82,6 +118,7 @@ function renderStudents() {
     `;
     list.appendChild(li);
   });
+  updateStudentPagination(filteredStudents.length);
   updateDashboardStats();
 }
 
@@ -89,7 +126,16 @@ function renderAttendance() {
   const list = document.getElementById('studentList');
   if (!list) return;
   list.innerHTML = '';
-  students.forEach((student) => {
+  const filteredStudents = getFilteredStudents();
+  
+  const totalPages = Math.ceil(filteredStudents.length / studentItemsPerPage) || 1;
+  if (currentStudentPage > totalPages) currentStudentPage = totalPages;
+  
+  const start = (currentStudentPage - 1) * studentItemsPerPage;
+  const end = start + studentItemsPerPage;
+  const paginatedStudents = filteredStudents.slice(start, end);
+  
+  paginatedStudents.forEach((student) => {
     const li = document.createElement('li');
     const statusColor = student.present ? '#28a745' : '#ff4d4d';
     const statusText = student.present ? 'Present' : 'Absent';
@@ -99,6 +145,42 @@ function renderAttendance() {
     `;
     list.appendChild(li);
   });
+  updateStudentPagination(filteredStudents.length);
+}
+
+function updateStudentPagination(totalItems) {
+  const prevBtn = document.getElementById('studentPrevBtn');
+  const nextBtn = document.getElementById('studentNextBtn');
+  const pageInfo = document.getElementById('studentPageInfo');
+  
+  if (!prevBtn || !nextBtn || !pageInfo) return;
+  
+  const totalPages = Math.ceil(totalItems / studentItemsPerPage) || 1;
+  pageInfo.innerText = `Page ${currentStudentPage} of ${totalPages}`;
+  
+  prevBtn.disabled = currentStudentPage === 1;
+  nextBtn.disabled = currentStudentPage === totalPages;
+}
+
+function changeStudentPerPage(value) {
+  studentItemsPerPage = parseInt(value, 10);
+  currentStudentPage = 1;
+  if (currentStudentMode === 'attendance') renderAttendance();
+  else renderStudents();
+}
+
+function prevStudentPage() {
+  if (currentStudentPage > 1) {
+    currentStudentPage--;
+    if (currentStudentMode === 'attendance') renderAttendance();
+    else renderStudents();
+  }
+}
+
+function nextStudentPage() {
+  currentStudentPage++;
+  if (currentStudentMode === 'attendance') renderAttendance();
+  else renderStudents();
 }
 
 async function toggleAttendance(studentId, currentStatus) {
@@ -144,6 +226,7 @@ async function removeStudent(studentId) {
 
 function sortStudents() {
   students.sort((a, b) => a.name.localeCompare(b.name));
+  currentStudentPage = 1;
   if (currentStudentMode === 'attendance') {
     renderAttendance();
   } else {
@@ -153,6 +236,7 @@ function sortStudents() {
 
 function setStudentMode(mode) {
   currentStudentMode = mode;
+  currentStudentPage = 1;
   if (mode === 'list') {
     renderStudents();
   } else if (mode === 'attendance') {
@@ -241,7 +325,7 @@ function showStudentDetails(studentId) {
     <div class="details-row"><strong>ID:</strong> ${student.studentId}</div>
     <div class="details-row"><strong>Name:</strong> ${student.name}</div>
     <div class="details-row"><strong>Email:</strong> ${student.email || 'N/A'}</div>
-    <div class="details-row"><strong>Phone:</strong> ${student.phone || 'N/A'}</div>
+    <div class="details-row"><strong>Phone:</strong> ${student.phone ? `<a href="tel:${student.phone}">${student.phone}</a>` : 'N/A'}</div>
     <div class="details-row"><strong>Course:</strong> ${student.course || 'N/A'}</div>
     <div class="details-row"><strong>Semester:</strong> ${student.semester || 'N/A'}</div>
     <div class="details-row"><strong>Status:</strong> ${student.present ? 'Present' : 'Absent'}</div>
@@ -332,7 +416,14 @@ function renderBooks(filter = currentBookFilter) {
   
   const filteredBooks = books.filter(book => filter === 'All' || book.status === filter);
   
-  filteredBooks.forEach(book => {
+  const totalPages = Math.ceil(filteredBooks.length / bookItemsPerPage) || 1;
+  if (currentBookPage > totalPages) currentBookPage = totalPages;
+  
+  const start = (currentBookPage - 1) * bookItemsPerPage;
+  const end = start + bookItemsPerPage;
+  const paginatedBooks = filteredBooks.slice(start, end);
+  
+  paginatedBooks.forEach(book => {
     const tr = document.createElement('tr');
     const issuedToText = book.status === 'Issued' ? (book.issuedTo || 'Unknown') : '-';
     const returnDateText = book.status === 'Issued' && book.returnDate ? book.returnDate : '-';
@@ -347,6 +438,7 @@ function renderBooks(filter = currentBookFilter) {
     `;
     list.appendChild(tr);
   });
+  updateBookPagination(filteredBooks.length);
   updateDashboardStats();
 
   // Auto-calculate the next consecutive book ID
@@ -361,7 +453,40 @@ function renderBooks(filter = currentBookFilter) {
 }
 
 function setBookFilter(filter) {
+  currentBookPage = 1;
   renderBooks(filter);
+}
+
+function updateBookPagination(totalItems) {
+  const prevBtn = document.getElementById('bookPrevBtn');
+  const nextBtn = document.getElementById('bookNextBtn');
+  const pageInfo = document.getElementById('bookPageInfo');
+  
+  if (!prevBtn || !nextBtn || !pageInfo) return;
+  
+  const totalPages = Math.ceil(totalItems / bookItemsPerPage) || 1;
+  pageInfo.innerText = `Page ${currentBookPage} of ${totalPages}`;
+  
+  prevBtn.disabled = currentBookPage === 1;
+  nextBtn.disabled = currentBookPage === totalPages;
+}
+
+function changeBookPerPage(value) {
+  bookItemsPerPage = parseInt(value, 10);
+  currentBookPage = 1;
+  renderBooks(currentBookFilter);
+}
+
+function prevBookPage() {
+  if (currentBookPage > 1) {
+    currentBookPage--;
+    renderBooks();
+  }
+}
+
+function nextBookPage() {
+  currentBookPage++;
+  renderBooks();
 }
 
 // --- DASHBOARD STATS ---

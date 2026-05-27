@@ -1,0 +1,7 @@
+# Environment variables
+.env
+.env.*
+
+# Dependencies & Build folders
+node_modules/
+.vercel/

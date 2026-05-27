@@ -97,7 +97,9 @@
   <div id="adminEmailDisplay" style="text-align: center; margin-top: -20px; margin-bottom: 20px; color: #90caf9; font-size: 14px; word-wrap: break-word;"></div>
 
   <ul>
-    <li class="active-item">Manage Librarians</li>
+    <li onclick="showSection('manage-librarians')">Manage Librarians</li>
+    <li onclick="showSection('view-students')">View Students</li>
+    <li onclick="showSection('view-books')">View Books</li>
     <li class="logout-item" onclick="logout()">Logout</li>
   </ul>
 </div>
@@ -114,6 +116,14 @@
   </div>
 
   <div class="cards" style="margin-bottom: 25px;">
+    <div class="card">
+      <h3>Total Students</h3>
+      <p id="adminTotalStudents">0</p>
+    </div>
+    <div class="card">
+      <h3>Total Books</h3>
+      <p id="adminTotalBooks">0</p>
+    </div>
     <div class="card">
       <h3>Total Fine Collected</h3>
       <p>₹<span id="adminTotalCollected">0</span></p>
@@ -142,6 +152,74 @@
         </thead>
         <tbody id="librarianList"></tbody>
       </table>
+    </div>
+  </div>
+
+  <div id="view-students" class="content-section">
+    <div class="section">
+      <h2>Registered Students</h2>
+      <input type="text" id="adminSearchStudent" placeholder="Search students by name, email, or ID..." onkeyup="searchAdminStudents()" style="width: 100%; max-width: 400px; margin-bottom: 20px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Student ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Course</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="adminStudentList"></tbody>
+      </table>
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-top: 20px;">
+        <div style="font-size: 14px;">
+          <label for="adminStudentPerPage">Items per page: </label>
+          <select id="adminStudentPerPage" onchange="changeAdminStudentPerPage(this.value)" style="padding: 5px; border-radius: 5px;">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+          </select>
+        </div>
+        <div id="adminStudentPagination" style="display: flex; gap: 10px;">
+          <button id="adminStudentPrevBtn" onclick="prevAdminStudentPage()" disabled>Previous</button>
+          <span id="adminStudentPageInfo" style="align-self: center;">Page 1</span>
+          <button id="adminStudentNextBtn" onclick="nextAdminStudentPage()">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-books" class="content-section">
+    <div class="section">
+      <h2>Library Books</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Book ID</th>
+            <th>Book Name</th>
+            <th>Status</th>
+            <th>Issued To</th>
+          </tr>
+        </thead>
+        <tbody id="adminBookList"></tbody>
+      </table>
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-top: 20px;">
+        <div style="font-size: 14px;">
+          <label for="adminBookPerPage">Items per page: </label>
+          <select id="adminBookPerPage" onchange="changeAdminBookPerPage(this.value)" style="padding: 5px; border-radius: 5px;">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+          </select>
+        </div>
+        <div id="adminBookPagination" style="display: flex; gap: 10px;">
+          <button id="adminBookPrevBtn" onclick="prevAdminBookPage()" disabled>Previous</button>
+          <span id="adminBookPageInfo" style="align-self: center;">Page 1</span>
+          <button id="adminBookNextBtn" onclick="nextAdminBookPage()">Next</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>

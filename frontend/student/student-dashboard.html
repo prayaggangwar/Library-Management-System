@@ -213,6 +213,21 @@
 
           <tbody id="bookList"></tbody>
         </table>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-top: 20px;">
+          <div style="font-size: 14px;">
+            <label for="studentBookPerPage">Items per page: </label>
+            <select id="studentBookPerPage" onchange="changeStudentBookPerPage(this.value)" style="padding: 5px; border-radius: 5px;">
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+          </div>
+          <div id="studentBookPagination" style="display: flex; gap: 10px;">
+            <button id="studentBookPrevBtn" onclick="prevStudentBookPage()" disabled>Previous</button>
+            <span id="studentBookPageInfo" style="align-self: center;">Page 1</span>
+            <button id="studentBookNextBtn" onclick="nextStudentBookPage()">Next</button>
+          </div>
+        </div>
       </div>
       </div>
 

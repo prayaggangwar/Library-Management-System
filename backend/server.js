@@ -142,6 +142,16 @@ const verifyLibrarian = (req, res, next) => {
   });
 };
 
+const verifyLibrarianOrAdmin = (req, res, next) => {
+  verifyToken(req, res, () => {
+    if (req.user && (req.user.role === 'librarian' || req.user.role === 'admin')) {
+      next();
+    } else {
+      res.status(403).json({ success: false, message: "Access Denied: Librarian or Admin privileges required!" });
+    }
+  });
+};
+
 const verifyAdmin = (req, res, next) => {
   verifyToken(req, res, () => {
     if (req.user && req.user.role === 'admin') {
@@ -168,6 +178,18 @@ app.get("/test", (req, res) => {
     message: "Backend Working"
   });
 
+});
+
+app.get("/api/config/firebase", (req, res) => {
+  res.json({
+    apiKey: process.env.FIREBASE_API_KEY,
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.FIREBASE_APP_ID,
+    measurementId: process.env.FIREBASE_MEASUREMENT_ID,
+  });
 });
 
 app.post("/api/send-email-otp", async (req, res) => {
@@ -448,11 +470,11 @@ app.put("/api/student/attendance", verifyToken, async (req, res) => {
 });
 
 // Student endpoints
-app.get("/api/students", verifyLibrarian, async (req, res) => {
+app.get("/api/students", verifyLibrarianOrAdmin, async (req, res) => {
   const students = await Student.find();
   res.json(students);
 });
-app.delete("/api/students/:id", verifyLibrarian, async (req, res) => {
+app.delete("/api/students/:id", verifyLibrarianOrAdmin, async (req, res) => {
   try {
     const student = await Student.findOne({ studentId: req.params.id });
     if (!student) return res.status(404).json({ success: false, message: "Student not found" });

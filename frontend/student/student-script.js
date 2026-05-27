@@ -1,3 +1,6 @@
+let studentBookItemsPerPage = 10;
+let currentStudentBookPage = 1;
+
 // --- CLOCK FUNCTIONALITY ---
 function updateClock() {
   const now = new Date();
@@ -61,6 +64,12 @@ async function fetchBooks() {
 
 const bookList = document.getElementById("bookList");
 
+function changeStudentBookPerPage(value) {
+  studentBookItemsPerPage = parseInt(value, 10);
+  currentStudentBookPage = 1;
+  renderBooks();
+}
+
 function renderBooks() {
   const searchInput = document.getElementById("searchAvailable");
   const searchQuery = searchInput ? searchInput.value.toLowerCase() : "";
@@ -73,23 +82,7 @@ function renderBooks() {
   let notificationsHTML = '';
 
   books.forEach(book => {
-    // 1. Show all books in the main Book List so students know what is unavailable
-    if (book.name.toLowerCase().includes(searchQuery)) {
-      let actionButton = book.status === "Available" 
-        ? `<button onclick="issueBook('${book.id}')">Issue</button>` 
-        : `<span style="color: #ff4d4d; font-weight: bold;">Unavailable</span>`;
-      let statusColor = book.status === "Available" ? "green" : "red";
-      bookList.innerHTML += `
-        <tr>
-          <td>${book.id}</td>
-          <td>${book.name}</td>
-          <td style="color: ${statusColor}; font-weight: bold;">${book.status}</td>
-          <td>${actionButton}</td>
-        </tr>
-      `;
-    }
-
-    // 2. Populate Issued Books and Reminders for the logged-in student
+    // 1. Populate Issued Books and Reminders for the logged-in student
     if (book.status === "Issued" && book.issuedTo === studentName) {
       issuedCount++;
       
@@ -127,6 +120,31 @@ function renderBooks() {
 
   const notifArea = document.getElementById("dashboard-notifications");
   if (notifArea) notifArea.innerHTML = notificationsHTML;
+
+  // 2. Paginate main Book List
+  const filteredBooks = books.filter(book => book.name.toLowerCase().includes(searchQuery));
+  const totalPages = Math.ceil(filteredBooks.length / studentBookItemsPerPage) || 1;
+  if (currentStudentBookPage > totalPages) currentStudentBookPage = totalPages;
+  
+  const start = (currentStudentBookPage - 1) * studentBookItemsPerPage;
+  const end = start + studentBookItemsPerPage;
+  
+  filteredBooks.slice(start, end).forEach(book => {
+    let actionButton = book.status === "Available" 
+      ? `<button onclick="issueBook('${book.id}')">Issue</button>` 
+      : `<span style="color: #ff4d4d; font-weight: bold;">Unavailable</span>`;
+    let statusColor = book.status === "Available" ? "green" : "red";
+    bookList.innerHTML += `
+      <tr>
+        <td>${book.id}</td>
+        <td>${book.name}</td>
+        <td style="color: ${statusColor}; font-weight: bold;">${book.status}</td>
+        <td>${actionButton}</td>
+      </tr>
+    `;
+  });
+
+  updateStudentBookPagination(filteredBooks.length);
 }
 
 async function issueBook(bookId) {

@@ -176,7 +176,24 @@
         <button onclick="sortStudents()">Sort A-Z</button>
       </div>
 
+      <input type="text" id="librarianSearchStudent" placeholder="Search students by name, email, or ID..." onkeyup="searchLibrarianStudents()" style="width: 100%; max-width: 400px; margin-bottom: 20px;">
+
       <ul id="studentList"></ul>
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-top: 20px;">
+        <div style="font-size: 14px;">
+          <label for="studentPerPage">Items per page: </label>
+          <select id="studentPerPage" onchange="changeStudentPerPage(this.value)" style="padding: 5px; border-radius: 5px;">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+          </select>
+        </div>
+        <div id="studentPagination" style="display: flex; gap: 10px;">
+          <button id="studentPrevBtn" onclick="prevStudentPage()" disabled>Previous</button>
+          <span id="studentPageInfo" style="align-self: center;">Page 1</span>
+          <button id="studentNextBtn" onclick="nextStudentPage()">Next</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -210,6 +227,21 @@
 
         <tbody id="bookList"></tbody>
       </table>
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-top: 20px;">
+        <div style="font-size: 14px;">
+          <label for="bookPerPage">Items per page: </label>
+          <select id="bookPerPage" onchange="changeBookPerPage(this.value)" style="padding: 5px; border-radius: 5px;">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+          </select>
+        </div>
+        <div id="bookPagination" style="display: flex; gap: 10px;">
+          <button id="bookPrevBtn" onclick="prevBookPage()" disabled>Previous</button>
+          <span id="bookPageInfo" style="align-self: center;">Page 1</span>
+          <button id="bookNextBtn" onclick="nextBookPage()">Next</button>
+        </div>
+      </div>
     </div>
   </div>
 

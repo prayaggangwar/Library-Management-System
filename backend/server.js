@@ -231,17 +231,30 @@ app.post("/api/send-email-otp", async (req, res) => {
           "content-type": "application/json"
         },
         body: JSON.stringify({
-          sender: { name: "Library System", email: process.env.BREVO_EMAIL },
-          to: [{ email: normalizedEmail }],
-          subject: "Library Management System OTP",
+          sender: {
+            name: "Library System",
+            email: process.env.BREVO_EMAIL
+          },
+          to: [
+            {
+              email: normalizedEmail
+            }
+          ],
+          subject: "Library OTP",
           htmlContent: otpTemplate
         })
       });
 
       const data = await emailResponse.json();
-      console.log("Brevo API Response:", data);
+      console.log("BREVO RESPONSE:", data);
+      console.log("STATUS:", emailResponse.status);
 
-      if (!emailResponse.ok) throw new Error(JSON.stringify(data));
+      if (!emailResponse.ok) {
+         return res.status(500).json({
+            success: false,
+            error: data
+         });
+      }
 
       console.log(`\n[EMAIL GATEWAY] OTP successfully sent to ${normalizedEmail}\n`); 
       res.json({ success: true, message: "OTP sent successfully! Please check your email." });

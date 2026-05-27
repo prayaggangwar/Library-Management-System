@@ -14,8 +14,8 @@ app.use(cors());
 app.use(express.json());
 
 console.log("\n--- ENVIRONMENT CHECK ---");
-console.log("BREVO_EMAIL:", process.env.BREVO_EMAIL ? "✅ Found" : "❌ Missing");
-console.log("BREVO_PASS:", process.env.BREVO_PASS ? "✅ Found" : "❌ Missing");
+console.log("EMAIL_USER:", process.env.EMAIL_USER ? "✅ Found" : "❌ Missing");
+console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "✅ Found" : "❌ Missing");
 console.log("-------------------------\n");
 
 if (!process.env.MONGO_URI) {
@@ -207,7 +207,7 @@ app.post("/api/send-email-otp", async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     otpStore[normalizedEmail] = otp;
     
-    if (process.env.BREVO_EMAIL && process.env.BREVO_PASS) {
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
       const otpTemplate = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
           <div style="background-color: #1e3c72; padding: 20px; text-align: center;">
@@ -225,12 +225,12 @@ app.post("/api/send-email-otp", async (req, res) => {
       `;
 
       const transporter = nodemailer.createTransport({
-        host: 'smtp-relay.brevo.com',
-        port: 2525,
-        secure: false, // Must be false for port 2525
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
         auth: {
-          user: process.env.BREVO_EMAIL,
-          pass: process.env.BREVO_PASS
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS
         }
       });
 
@@ -244,7 +244,7 @@ app.post("/api/send-email-otp", async (req, res) => {
       });
 
       await transporter.sendMail({
-        from: `"Library System" <${process.env.BREVO_EMAIL}>`,
+        from: `"Library System" <${process.env.EMAIL_USER}>`,
         to: normalizedEmail,
         subject: "Library Management System OTP",
         html: otpTemplate

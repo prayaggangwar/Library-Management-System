@@ -13,6 +13,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+console.log("\n--- ENVIRONMENT CHECK ---");
+console.log("BREVO_EMAIL:", process.env.BREVO_EMAIL ? "✅ Found" : "❌ Missing");
+console.log("BREVO_PASS:", process.env.BREVO_PASS ? "✅ Found" : "❌ Missing");
+console.log("-------------------------\n");
+
 if (!process.env.MONGO_URI) {
   console.error("FATAL ERROR: MONGO_URI is not defined in the environment variables.");
   process.exit(1);

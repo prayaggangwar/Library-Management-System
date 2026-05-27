@@ -2,7 +2,6 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 
-const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const cron = require("node-cron");
 const path = require("path");
@@ -14,8 +13,8 @@ app.use(cors());
 app.use(express.json());
 
 console.log("\n--- ENVIRONMENT CHECK ---");
-console.log("EMAIL_USER:", process.env.EMAIL_USER ? "✅ Found" : "❌ Missing");
-console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "✅ Found" : "❌ Missing");
+console.log("BREVO_API_KEY:", process.env.BREVO_API_KEY ? "✅ Found" : "❌ Missing");
+console.log("BREVO_EMAIL:", process.env.BREVO_EMAIL ? "✅ Found" : "❌ Missing");
 console.log("-------------------------\n");
 
 if (!process.env.MONGO_URI) {

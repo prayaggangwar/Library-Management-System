@@ -226,8 +226,8 @@ app.post("/api/send-email-otp", async (req, res) => {
 
       const transporter = nodemailer.createTransport({
         host: 'smtp-relay.brevo.com',
-        port: 587,
-        secure: false, // Must be false for port 587
+        port: 2525,
+        secure: false, // Must be false for port 2525
         auth: {
           user: process.env.BREVO_EMAIL,
           pass: process.env.BREVO_PASS

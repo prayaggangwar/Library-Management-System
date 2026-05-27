@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 
+const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const cron = require("node-cron");
 const path = require("path");
@@ -201,7 +202,7 @@ app.post("/api/send-email-otp", async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     otpStore[normalizedEmail] = otp;
     
-    if (process.env.RESEND_API_KEY) {
+    if (process.env.BREVO_EMAIL && process.env.BREVO_PASS) {
       const otpTemplate = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
           <div style="background-color: #1e3c72; padding: 20px; text-align: center;">
@@ -218,21 +219,22 @@ app.post("/api/send-email-otp", async (req, res) => {
         </div>
       `;
 
-      const emailResponse = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          from: "Library System <onboarding@resend.dev>",
-          to: normalizedEmail,
-          subject: "Library Management System OTP",
-          html: otpTemplate
-        })
+      const transporter = nodemailer.createTransport({
+        host: 'smtp-relay.brevo.com',
+        port: 587,
+        secure: false, // Must be false for port 587
+        auth: {
+          user: process.env.BREVO_EMAIL,
+          pass: process.env.BREVO_PASS
+        }
       });
 
-      if (!emailResponse.ok) throw new Error(await emailResponse.text());
+      await transporter.sendMail({
+        from: `"Library System" <${process.env.BREVO_EMAIL}>`,
+        to: normalizedEmail,
+        subject: "Library Management System OTP",
+        html: otpTemplate
+      });
 
       console.log(`\n[EMAIL GATEWAY] OTP successfully sent to ${normalizedEmail}\n`); 
       res.json({ success: true, message: "OTP sent successfully! Please check your email." });

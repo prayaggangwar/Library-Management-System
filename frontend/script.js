@@ -318,27 +318,11 @@ async function verifyOtpAndProceed() {
   }
 }
 
-async function googleSignIn() {
-  // 1. Instantly trigger the popup to prevent browser popup blockers!
-  const provider = new firebase.auth.GoogleAuthProvider();
-  const signInPromise = auth.signInWithPopup(provider);
-
-  // 2. Now safely perform UI updates while the popup is opening
+async function processGoogleUser(user) {
   const containerId = "student-login";
   displayMessage(containerId, "");
 
-  const btn = document.querySelector('button[onclick="googleSignIn()"]');
-  if (btn && btn.disabled) return;
-  const originalText = btn ? btn.innerHTML : "Sign in with Google";
-  if (btn) {
-    btn.innerHTML = `<span class="spinner"></span>Signing in...`;
-    btn.disabled = true;
-  }
-
   try {
-    const result = await signInPromise;
-    const user = result.user;
-
     const res = await fetch(`${API_BASE_URL}/login/google`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -359,12 +343,43 @@ async function googleSignIn() {
       window.isGoogleSignIn = true;
       document.getElementById("regStep1").style.display = 'none';
       document.getElementById("regStep2").style.display = 'flex';
-      (document.getElementById("regPasswordContainer") || document.getElementById("regPassword")).style.display = 'none';
+      const regPassword = document.getElementById("regPasswordContainer") || document.getElementById("regPassword");
+      if (regPassword) regPassword.style.display = 'none';
       const regConfirm = document.getElementById("regConfirmPasswordContainer") || document.getElementById("regConfirmPassword");
       if (regConfirm) regConfirm.style.display = 'none';
     }
   } catch (error) {
     console.error(error);
+    displayMessage(containerId, "Authentication failed: " + error.message);
+  }
+}
+
+async function googleSignIn() {
+  // 1. Instantly trigger the popup to prevent browser popup blockers!
+  const provider = new firebase.auth.GoogleAuthProvider();
+  const signInPromise = auth.signInWithPopup(provider);
+
+  // 2. Now safely perform UI updates while the popup is opening
+  const containerId = "student-login";
+  displayMessage(containerId, "");
+
+  const btn = document.querySelector('button[onclick="googleSignIn()"]');
+  if (btn && btn.disabled) return;
+  const originalText = btn ? btn.innerHTML : "Sign in with Google";
+  if (btn) {
+    btn.innerHTML = `<span class="spinner"></span>Signing in...`;
+    btn.disabled = true;
+  }
+
+  try {
+    const result = await signInPromise;
+    await processGoogleUser(result.user);
+  } catch (error) {
+    console.error(error);
+    if (error.code === "auth/popup-blocked") {
+      displayMessage(containerId, "Popup blocked. Please allow popups for this site and try again.");
+      return;
+    }
     // Ignore the error if the user intentionally closed the Google popup window
     if (error.code !== "auth/popup-closed-by-user" && error.code !== "auth/cancelled-popup-request") {
       displayMessage(containerId, "Google Sign-In failed: " + error.message);

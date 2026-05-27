@@ -739,14 +739,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  if (sessionStorage.getItem('pendingGoogleRedirect')) {
+  if (localStorage.getItem('pendingGoogleRedirect')) {
     showLogin('student');
     const btn = document.querySelector('button[onclick="googleSignIn()"]');
     if (btn) {
       btn.innerHTML = `<span class="spinner"></span>Completing login...`;
       btn.disabled = true;
     }
-    sessionStorage.removeItem('pendingGoogleRedirect');
   } else {
     // Show the role selection landing page by default
     showRoleSelection();

@@ -221,8 +221,9 @@ app.post("/api/send-email-otp", async (req, res) => {
 
       const transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
+        port: 587,
+        secure: false, // Must be false for port 587
+        requireTLS: true, // Forces secure encryption
         family: 4, // Forces IPv4 to prevent ENETUNREACH IPv6 errors on Render
         auth: {
           user: process.env.EMAIL_USER,

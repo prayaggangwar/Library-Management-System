@@ -26,8 +26,24 @@ function parseJwt(token) {
   }
 }
 
-const token = localStorage.getItem("authToken");
-const loggedInStudent = (token ? parseJwt(token) : null) || { name: "Prayag", course: "B.Tech CSE", semester: "4th" };
+function checkAuthState() {
+  const token = localStorage.getItem("authToken");
+  if (!token) { window.location.replace("../index.html"); return null; }
+  
+  const payload = parseJwt(token);
+  const currentTime = Math.floor(Date.now() / 1000);
+  
+  if (!payload || payload.role !== 'student' || (payload.exp && payload.exp < currentTime)) {
+    localStorage.removeItem("authToken");
+    window.location.replace("../index.html");
+    return null;
+  }
+  return payload;
+}
+
+const loggedInStudent = checkAuthState();
+if (!loggedInStudent) throw new Error("Unauthorized - Halting script execution");
+
 const studentName = loggedInStudent.name;
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -54,7 +70,11 @@ let books = [];
 
 async function fetchBooks() {
   try {
-    const res = await fetch(`${API_BASE_URL}/books`);
+    const token = localStorage.getItem("authToken");
+    const res = await fetch(`${API_BASE_URL}/books`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (res.status === 401 || res.status === 403) return;
     books = await res.json();
     renderBooks();
   } catch (err) {

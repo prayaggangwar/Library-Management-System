@@ -18,18 +18,43 @@ let auth;
     firebase.initializeApp(firebaseConfig);
     auth = firebase.auth();
 
-    // Check if the user just returned from a Google Sign-In redirect
-    const redirectResult = await auth.getRedirectResult();
-    if (redirectResult && redirectResult.user) {
-      await processGoogleUser(redirectResult.user);
-    } else {
-      // If we expected a redirect but none came (e.g., user cancelled)
-      const btn = document.querySelector('button[onclick="googleSignIn()"]');
-      if (btn && btn.disabled && btn.innerHTML.includes("Completing login...")) {
-        btn.innerHTML = `<svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg> Sign in with Google`;
-        btn.disabled = false;
+    // Ensure Firebase session survives redirects and page reloads
+    await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+    // Fallback listener for users returning from redirect where getRedirectResult is flaky
+    auth.onAuthStateChanged(async (user) => {
+      if (user && localStorage.getItem('pendingGoogleRedirect')) {
+        console.log("User detected via onAuthStateChanged");
+        localStorage.removeItem('pendingGoogleRedirect');
+        await processGoogleUser(user);
       }
-    }
+    });
+
+    // HANDLE REDIRECT RESULT EXACTLY AS INSTRUCTED
+    auth.getRedirectResult()
+      .then(async (result) => {
+        if (result?.user) {
+          console.log("Google Login Success", result.user);
+          localStorage.removeItem('pendingGoogleRedirect');
+          await processGoogleUser(result.user);
+        } else {
+          // Wait for onAuthStateChanged to catch up. If not, reset UI after 3 seconds.
+          setTimeout(() => {
+            if (localStorage.getItem('pendingGoogleRedirect')) {
+              localStorage.removeItem('pendingGoogleRedirect');
+              const btn = document.querySelector('button[onclick="googleSignIn()"]');
+              if (btn && btn.disabled && btn.innerHTML.includes("Completing login...")) {
+                btn.innerHTML = `<svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg> Sign in with Google`;
+                btn.disabled = false;
+              }
+            }
+          }, 3000);
+        }
+      })
+      .catch((error) => {
+        localStorage.removeItem('pendingGoogleRedirect');
+        console.log(error);
+      });
   } catch (error) {
     console.error("Could not initialize Firebase:", error);
     const btn = document.querySelector('button[onclick="googleSignIn()"]');
@@ -384,11 +409,14 @@ async function processGoogleUser(user) {
 }
 
 async function googleSignIn() {
+  // 1. Instantly trigger the popup to prevent browser popup blockers!
   const provider = new firebase.auth.GoogleAuthProvider();
   provider.setCustomParameters({
     prompt: 'select_account' // Forces Google to always ask which account to use
   });
+  const signInPromise = auth.signInWithPopup(provider);
 
+  // 2. Now safely perform UI updates while the popup is opening
   const containerId = "student-login";
   displayMessage(containerId, "");
 
@@ -401,13 +429,12 @@ async function googleSignIn() {
   }
 
   try {
-    // DIRECTLY TRIGGER POPUP FROM BUTTON CLICK
-    const result = await auth.signInWithPopup(provider);
+    const result = await signInPromise;
     await processGoogleUser(result.user);
   } catch (error) {
     console.error(error);
     if (error.code === "auth/popup-blocked") {
-      console.log("Popup blocked. Redirecting...");
+      displayMessage(containerId, "Popup blocked. Redirecting to Google...");
       sessionStorage.setItem('pendingGoogleRedirect', 'true');
       auth.signInWithRedirect(provider);
       return;
@@ -417,9 +444,7 @@ async function googleSignIn() {
       displayMessage(containerId, "Google Sign-In failed: " + error.message);
     }
   } finally {
-    // Do not reset the button back to "Sign in" if we are in the middle of a redirect!
-    const isRedirecting = sessionStorage.getItem('pendingGoogleRedirect') === 'true';
-    if (btn && !isRedirecting) {
+    if (btn) {
       btn.innerHTML = originalText;
       btn.disabled = false;
     }

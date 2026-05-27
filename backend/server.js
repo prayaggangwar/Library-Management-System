@@ -307,8 +307,13 @@ app.post("/api/register", async (req, res) => {
     }
     
     // Generate Student ID
-    const count = await Student.countDocuments();
-    const studentId = "S" + String(count + 1).padStart(3, '0');
+    let currentCount = await Student.countDocuments();
+    let studentId = "S" + String(currentCount + 1).padStart(3, '0');
+
+    while (await Student.findOne({ studentId })) {
+      currentCount++;
+      studentId = "S" + String(currentCount + 1).padStart(3, '0');
+    }
 
     const newStudent = new Student({ studentId, email: normalizedEmail, name, course, semester, password, phone });
     await newStudent.save();
@@ -325,7 +330,8 @@ app.post("/api/register", async (req, res) => {
 app.post("/api/login/google", async (req, res) => {
   try {
     const { email } = req.body;
-    const student = await Student.findOne({ email });
+    const normalizedEmail = email.toLowerCase().trim();
+    const student = await Student.findOne({ email: new RegExp(`^${normalizedEmail}$`, 'i') });
     
     if (student) {
       const token = jwt.sign({ id: student._id, email: student.email, name: student.name, course: student.course, semester: student.semester, role: 'student' }, JWT_SECRET, { expiresIn: '1d' });
@@ -543,9 +549,31 @@ app.put("/api/students/:id", verifyLibrarian, async (req, res) => {
 });
 
 // Books endpoints
-app.get("/api/books", async (req, res) => {
-  const books = await Book.find();
-  res.json(books);
+app.get("/api/books", verifyToken, async (req, res) => {
+  try {
+    const { page, limit, search, status } = req.query;
+    let query = {};
+
+    if (search) query.name = { $regex: search, $options: "i" };
+    if (status && status !== "All") query.status = status;
+
+    if (page && limit) {
+      const pageNumber = parseInt(page, 10) || 1;
+      const limitNumber = parseInt(limit, 10) || 10;
+      const skip = (pageNumber - 1) * limitNumber;
+
+      const totalBooks = await Book.countDocuments(query);
+      const books = await Book.find(query).skip(skip).limit(limitNumber);
+
+      res.json({ books, currentPage: pageNumber, totalPages: Math.ceil(totalBooks / limitNumber), totalBooks });
+    } else {
+      // Fallback for frontends that haven't implemented backend pagination yet
+      const books = await Book.find(query);
+      res.json(books);
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 app.post("/api/books", verifyLibrarian, async (req, res) => {
   const newBook = new Book(req.body);

@@ -6,9 +6,32 @@ let adminBookItemsPerPage = 10;
 let currentAdminStudentPage = 1;
 let currentAdminBookPage = 1;
 
-if (!token) {
-  window.location.href = "./index.html";
+function parseJwt(token) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
 }
+
+function checkAuthState() {
+  if (!token) { window.location.replace("./index.html"); return null; }
+  const payload = parseJwt(token);
+  if (!payload || payload.role !== 'admin' || (payload.exp && payload.exp < Math.floor(Date.now() / 1000))) {
+    localStorage.removeItem("authToken");
+    window.location.replace("./index.html");
+    return null;
+  }
+  return payload;
+}
+
+const loggedInAdmin = checkAuthState();
+if (!loggedInAdmin) throw new Error("Unauthorized - Halting script execution");
 
 document.addEventListener("DOMContentLoaded", () => {
   fetchStats();
@@ -16,8 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchStudents();
   fetchBooks();
   
-  const payload = JSON.parse(atob(token.split('.')[1]));
-  document.getElementById("adminEmailDisplay").innerText = payload.email || "Admin";
+  document.getElementById("adminEmailDisplay").innerText = loggedInAdmin.email || "Admin";
 
   if (localStorage.getItem('darkMode') === 'enabled') {
     document.body.classList.add('dark-mode');
@@ -174,27 +196,26 @@ let adminBooks = [];
 
 async function fetchBooks() {
   try {
-    const res = await fetch(`${API_URL}/books`);
-    adminBooks = await res.json();
+    const res = await fetch(`${API_URL}/books?page=${currentAdminBookPage}&limit=${adminBookItemsPerPage}`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (res.status === 401 || res.status === 403) return;
     
-    document.getElementById("adminTotalBooks").innerText = adminBooks.length;
+    const data = await res.json();
+    adminBooks = data.books || data; // Use data.books if paginated, otherwise fallback to array
     
-    renderAdminBooks();
+    const totalBooks = data.totalBooks !== undefined ? data.totalBooks : adminBooks.length;
+    document.getElementById("adminTotalBooks").innerText = totalBooks;
+    
+    renderAdminBooks(totalBooks);
   } catch (err) { console.error("Failed to load books", err); }
 }
 
-function renderAdminBooks() {
+function renderAdminBooks(totalItems = adminBooks.length) {
   const tbody = document.getElementById("adminBookList");
   tbody.innerHTML = "";
   
-  const totalPages = Math.ceil(adminBooks.length / adminBookItemsPerPage) || 1;
-  if (currentAdminBookPage > totalPages) currentAdminBookPage = totalPages;
-  
-  const start = (currentAdminBookPage - 1) * adminBookItemsPerPage;
-  const end = start + adminBookItemsPerPage;
-  const paginatedBooks = adminBooks.slice(start, end);
-  
-  paginatedBooks.forEach(book => {
+  adminBooks.forEach(book => {
     const statusColor = book.status === 'Available' ? 'green' : 'red';
     tbody.innerHTML += `
       <tr>
@@ -206,7 +227,7 @@ function renderAdminBooks() {
     `;
   });
   
-  updateAdminBookPagination(adminBooks.length);
+  updateAdminBookPagination(totalItems);
 }
 
 function updateAdminBookPagination(totalItems) {
@@ -226,19 +247,19 @@ function updateAdminBookPagination(totalItems) {
 function changeAdminBookPerPage(value) {
   adminBookItemsPerPage = parseInt(value, 10);
   currentAdminBookPage = 1;
-  renderAdminBooks();
+  fetchBooks();
 }
 
 function prevAdminBookPage() {
   if (currentAdminBookPage > 1) {
     currentAdminBookPage--;
-    renderAdminBooks();
+    fetchBooks();
   }
 }
 
 function nextAdminBookPage() {
   currentAdminBookPage++;
-  renderAdminBooks();
+  fetchBooks();
 }
 
 async function fetchLibrarians() {

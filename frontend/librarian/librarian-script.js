@@ -46,6 +46,22 @@ function parseJwt(token) {
   }
 }
 
+function checkAuthState() {
+  const token = localStorage.getItem("authToken");
+  if (!token) { window.location.replace("../index.html"); return null; }
+  
+  const payload = parseJwt(token);
+  if (!payload || payload.role !== 'librarian' || (payload.exp && payload.exp < Math.floor(Date.now() / 1000))) {
+    localStorage.removeItem("authToken");
+    window.location.replace("../index.html");
+    return null;
+  }
+  return payload;
+}
+
+const loggedInLibrarian = checkAuthState();
+if (!loggedInLibrarian) throw new Error("Unauthorized - Halting script execution");
+
 // --- MANAGE STUDENTS ---
 let students = [];
 let currentStudentMode = 'list';
@@ -344,7 +360,10 @@ let books = [];
 
 async function fetchBooks() {
   try {
-    const res = await fetch(`${API_BASE_URL}/books`);
+    const res = await fetch(`${API_BASE_URL}/books`, { 
+      headers: getAuthHeaders() 
+    });
+    if (res.status === 401 || res.status === 403) return;
     books = await res.json();
     renderBooks();
   } catch (err) {
@@ -652,8 +671,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if(btn) btn.innerText = '☀️';
   }
   
-  const token = localStorage.getItem("authToken");
-  const loggedInLibrarian = token ? parseJwt(token) : null;
   if (loggedInLibrarian && loggedInLibrarian.email) {
     const emailDisplay = document.getElementById('librarianEmailDisplay');
     if (emailDisplay) emailDisplay.innerText = loggedInLibrarian.email;

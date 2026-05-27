@@ -238,7 +238,10 @@ app.post("/api/send-email-otp", async (req, res) => {
         })
       });
 
-      if (!emailResponse.ok) throw new Error(await emailResponse.text());
+      const data = await emailResponse.json();
+      console.log("Brevo API Response:", data);
+
+      if (!emailResponse.ok) throw new Error(JSON.stringify(data));
 
       console.log(`\n[EMAIL GATEWAY] OTP successfully sent to ${normalizedEmail}\n`); 
       res.json({ success: true, message: "OTP sent successfully! Please check your email." });

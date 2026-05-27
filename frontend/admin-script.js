@@ -1,4 +1,4 @@
-const API_URL = "https://library-management-system-1-vh1g.onrender.com/api";
+const API_URL = API_BASE_URL;
 let token = localStorage.getItem("authToken");
 
 let adminStudentItemsPerPage = 10;

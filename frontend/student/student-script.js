@@ -54,7 +54,7 @@ let books = [];
 
 async function fetchBooks() {
   try {
-    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/books");
+    const res = await fetch(`${API_BASE_URL}/books`);
     books = await res.json();
     renderBooks();
   } catch (err) {
@@ -166,7 +166,7 @@ async function issueBook(bookId) {
     const formattedDate = `${yyyy}-${mm}-${dd}`;
 
     try {
-      const res = await fetch(`https://library-management-system-1-vh1g.onrender.com/api/books/${bookId}`, {
+      const res = await fetch(`${API_BASE_URL}/books/${bookId}`, {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",
@@ -201,7 +201,7 @@ async function returnBook(bookId) {
     }
 
     try {
-      const res = await fetch(`https://library-management-system-1-vh1g.onrender.com/api/books/${bookId}`, {
+      const res = await fetch(`${API_BASE_URL}/books/${bookId}`, {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",
@@ -235,7 +235,7 @@ let fines = [];
 
 async function fetchFines() {
   try {
-    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/fines");
+    const res = await fetch(`${API_BASE_URL}/fines`);
     fines = await res.json();
     renderFine();
   } catch (err) {
@@ -280,7 +280,7 @@ async function payFine() {
   if (pendingFine > 0) {
     try {
       for (const fine of myFines) {
-        await fetch(`https://library-management-system-1-vh1g.onrender.com/api/fines/${fine._id}`, { method: 'DELETE' });
+        await fetch(`${API_BASE_URL}/fines/${fine._id}`, { method: 'DELETE' });
       }
       alert(`Successfully paid ₹${pendingFine}.`);
       fetchFines();
@@ -362,7 +362,7 @@ async function fetchMyDetails() {
     const token = localStorage.getItem("authToken");
     if (!token) return;
     
-    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/student/me", { 
+    const res = await fetch(`${API_BASE_URL}/student/me`, { 
       headers: { "Authorization": `Bearer ${token}` } 
     });
     const data = await res.json();
@@ -409,7 +409,7 @@ async function markAttendance() {
     const btn = document.getElementById("markAttendanceBtn");
     if (btn) { btn.innerText = "Marking..."; btn.disabled = true; }
     
-    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/student/attendance", { 
+    const res = await fetch(`${API_BASE_URL}/student/attendance`, { 
       method: "PUT",
       headers: { "Authorization": `Bearer ${token}` }
     });

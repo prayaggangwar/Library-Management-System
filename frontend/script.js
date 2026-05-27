@@ -3,7 +3,7 @@ let auth;
 
 (async function initializeFirebase() {
   try {
-    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/config/firebase");
+    const res = await fetch(`${API_BASE_URL}/config/firebase`);
     if (!res.ok) {
       throw new Error(`Failed to fetch Firebase config: ${res.statusText}`);
     }
@@ -16,7 +16,7 @@ let auth;
     console.error("Could not initialize Firebase:", error);
     // Display an error to the user on the page
     const loginBox = document.querySelector('.login-box');
-    if (loginBox) loginBox.innerHTML = `<h1>Error</h1><p style="color: #ff4d4d; text-align: center;">Could not connect to the server to load application configuration. Please try again later.</p>`;
+    if (loginBox) loginBox.innerHTML = `<h1>Error</h1><p style="color: #ff4d4d; text-align: center;">Error loading configuration. If your server is running, check if your FIREBASE keys are in your .env file!</p>`;
   }
 })();
 
@@ -231,7 +231,7 @@ async function sendOTP(emailInputId, type) {
   }
 
   try {
-    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/send-email-otp", {
+    const res = await fetch(`${API_BASE_URL}/send-email-otp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email })
@@ -283,7 +283,7 @@ async function verifyOtpAndProceed() {
   }
 
   try {
-    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/verify-email-otp", {
+    const res = await fetch(`${API_BASE_URL}/verify-email-otp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, otp })
@@ -334,7 +334,7 @@ async function googleSignIn() {
     const result = await signInPromise;
     const user = result.user;
 
-    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/login/google", {
+    const res = await fetch(`${API_BASE_URL}/login/google`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: user.email })
@@ -415,7 +415,7 @@ async function registerStudent() {
   }
 
   try {
-    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/register", {
+    const res = await fetch(`${API_BASE_URL}/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, course, semester, password: pass, phone, otp, googleSignIn: window.isGoogleSignIn })
@@ -478,7 +478,7 @@ async function resetPassword() {
   }
 
   try {
-    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/reset-password", {
+    const res = await fetch(`${API_BASE_URL}/reset-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, otp, newPassword })
@@ -525,7 +525,7 @@ async function studentLogin() {
   }
 
   try {
-    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/login/student", {
+    const res = await fetch(`${API_BASE_URL}/login/student`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password: pass })
@@ -573,7 +573,7 @@ async function librarianLogin() {
   }
 
   try {
-    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/login/librarian", {
+    const res = await fetch(`${API_BASE_URL}/login/librarian`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, otp })
@@ -621,7 +621,7 @@ async function adminLogin() {
   }
 
   try {
-    const res = await fetch("https://library-management-system-1-vh1g.onrender.com/api/login/admin", {
+    const res = await fetch(`${API_BASE_URL}/login/admin`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, otp })

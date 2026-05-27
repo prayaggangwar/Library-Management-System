@@ -234,6 +234,15 @@ app.post("/api/send-email-otp", async (req, res) => {
         }
       });
 
+      // Temporarily verify the transporter configuration
+      transporter.verify((error, success) => {
+        if(error){
+          console.log("SMTP Verification Error:", error);
+        } else {
+          console.log("SMTP Ready");
+        }
+      });
+
       await transporter.sendMail({
         from: `"Library System" <${process.env.BREVO_EMAIL}>`,
         to: normalizedEmail,
